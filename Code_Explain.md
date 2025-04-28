@@ -63,7 +63,18 @@ Agar tidak terjadi **konflik**, maka port serial 1 (customSerial) dibuat untuk k
 // 866E6 for Europe
 // 915E6 for North America
 #define BAND 920E6
+```
 
+Pin Deskripsi:
+1. **SCK** (Serial Clock): Pin clock SPI, digunakan untuk sinkronisasi data. Diatur ke pin GPIO 5.
+2. **MISO** (Master In Slave Out): Pin untuk menerima data dari modul LoRa ke mikrokontroler. Diatur ke pin GPIO 19.
+3. **MOSI** (Master Out Slave In): Pin untuk mengirim data dari mikrokontroler ke modul LoRa. Diatur ke pin GPIO 27.
+4. **SS** (Slave Select) atau CS (Chip Select): Pin untuk memilih modul LoRa sebagai perangkat SPI yang aktif. Diatur ke pin GPIO 18.
+5. **RST** (Reset): Pin untuk mereset modul LoRa. Diatur ke pin GPIO 23.
+6. **DIO0** (Digital I/O 0): Pin interrupt yang digunakan oleh modul LoRa untuk memberi sinyal bahwa data telah diterima atau siap dikirim. Diatur ke pin GPIO 26. Nanti dipakai dengan library LoRa.setPins(SS, RST, DIO0) untuk mengatur pin-pin tersebut. Nanti dipakai dengan library LoRa.begin(BAND) untuk memulai komunikasi LoRa.
+7. **BAND**: Frekuensi yang digunakan untuk komunikasi LoRa. Diatur ke 920E6 untuk North America.
+
+```cpp
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
