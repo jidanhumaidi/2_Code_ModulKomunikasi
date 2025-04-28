@@ -74,16 +74,34 @@ Pin Deskripsi:
 6. **DIO0** (Digital I/O 0): Pin interrupt yang digunakan oleh modul LoRa untuk memberi sinyal bahwa data telah diterima atau siap dikirim. Diatur ke pin GPIO 26. Nanti dipakai dengan library LoRa.setPins(SS, RST, DIO0) untuk mengatur pin-pin tersebut. Nanti dipakai dengan library LoRa.begin(BAND) untuk memulai komunikasi LoRa.
 7. **BAND**: Frekuensi yang digunakan untuk komunikasi LoRa. Diatur ke 920E6 untuk North America.
 
+#### I2C Configuration
 ```cpp
 #include <Wire.h>
+```
+Wire.h adalah library yang digunakan untuk komunikasi I2C (Inter-Integrated Circuit) pada ESP32. Library ini memungkinkan Anda untuk berkomunikasi dengan perangkat I2C seperti sensor, modul, dan layar OLED.
+
+#### OLED Configuration
+```cpp 
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+```
+**Adafruit_GFX.h** adalah library dasar untuk menggambar grafik pada layar OLED, sedangkan **Adafruit_SSD1306.h** adalah library khusus untuk mengendalikan layar OLED berbasis SSD1306 (driver untuk layar OLED yang menggunakan chip SSD1306). Library ini menyediakan fungsi-fungsi untuk menggambar teks, gambar, dan bentuk pada layar OLED.
+
+#### OLED Pin Configuration
+```cpp
 // OLED pins
 #define OLED_SDA 21
 #define OLED_SCL 22
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
+```
+1. **OLED_SDA**: Pin data untuk komunikasi I2C. Diatur ke pin GPIO 21.
+2. **OLED_SCL**: Pin clock untuk komunikasi I2C. Diatur ke pin GPIO 22.
+3. **SCREEN_WIDTH**: Lebar layar OLED dalam piksel. Diatur ke 128 piksel.
+4. **SCREEN_HEIGHT**: Tinggi layar OLED dalam piksel. Diatur ke 64 piksel.
 
+
+```cpp
 #include "SD.h"
 #include "FS.h"
 #define SD_CS 13
