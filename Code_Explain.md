@@ -100,7 +100,7 @@ Wire.h adalah library yang digunakan untuk komunikasi I2C (Inter-Integrated Circ
 3. **SCREEN_WIDTH**: Lebar layar OLED dalam piksel. Diatur ke 128 piksel.
 4. **SCREEN_HEIGHT**: Tinggi layar OLED dalam piksel. Diatur ke 64 piksel.
 
-
+##### SD Card Configuration
 ```cpp
 #include "SD.h"
 #include "FS.h"
@@ -108,7 +108,16 @@ Wire.h adalah library yang digunakan untuk komunikasi I2C (Inter-Integrated Circ
 #define SD_SCK 14
 #define SD_MISO 2
 #define SD_MOSI 15
+```
 
+1. SD.h: Library untuk mengakses kartu SD.
+2. FS.h: Library untuk sistem file pada ESP32.
+3. SD_CS: Pin chip select untuk kartu SD. Diatur ke pin GPIO 13.
+4. SD_SCK: Pin clock untuk komunikasi SPI dengan kartu SD. Diatur ke pin GPIO 14.  
+5. SD_MISO: Pin untuk menerima data dari kartu SD ke mikrokontroler. Diatur ke pin GPIO 2.
+6. SD_MOSI: Pin untuk mengirim data dari mikrokontroler ke kartu SD. Diatur ke pin GPIO 15.
+
+```cpp
 // LoRaSPI
 SPIClass LoraSpi(HSPI);
 
