@@ -100,7 +100,7 @@ Wire.h adalah library yang digunakan untuk komunikasi I2C (Inter-Integrated Circ
 3. **SCREEN_WIDTH**: Lebar layar OLED dalam piksel. Diatur ke 128 piksel.
 4. **SCREEN_HEIGHT**: Tinggi layar OLED dalam piksel. Diatur ke 64 piksel.
 
-##### SD Card Configuration
+#### SD Card Configuration
 ```cpp
 #include "SD.h"
 #include "FS.h"
@@ -116,6 +116,82 @@ Wire.h adalah library yang digunakan untuk komunikasi I2C (Inter-Integrated Circ
 4. SD_SCK: Pin clock untuk komunikasi SPI dengan kartu SD. Diatur ke pin GPIO 14.  
 5. SD_MISO: Pin untuk menerima data dari kartu SD ke mikrokontroler. Diatur ke pin GPIO 2.
 6. SD_MOSI: Pin untuk mengirim data dari mikrokontroler ke kartu SD. Diatur ke pin GPIO 15.
+
+#### Library SD.h
+
+**SD.h** adalah library yang digunakan untuk mengakses kartu SD pada ESP32. Library ini menyediakan antarmuka untuk membaca, menulis, membuat, dan menghapus file di kartu SD. Dengan menggunakan library ini, Anda dapat menyimpan data seperti log, konfigurasi, atau file lainnya ke kartu SD.
+
+##### Fitur Utama:
+1. **Membaca File**: Anda dapat membaca isi file yang tersimpan di kartu SD.
+2. **Menulis File**: Anda dapat menambahkan data ke file yang ada atau membuat file baru.
+3. **Menghapus File**: File yang tidak diperlukan dapat dihapus untuk mengosongkan ruang.
+4. **Membuat Direktori**: Anda dapat membuat struktur folder untuk mengorganisasi file.
+5. **Kompatibilitas Sistem File**: Mendukung sistem file FAT16 dan FAT32.
+
+##### Catatan Penting:
+- Pastikan kartu SD diformat dengan sistem file FAT16 atau FAT32.
+- Gunakan modul pembaca kartu SD yang kompatibel dengan ESP32.
+- Periksa koneksi pin SPI untuk memastikan komunikasi yang stabil.
+
+##### Contoh Penggunaan:
+```cpp
+#include "SD.h"
+#include "FS.h"
+
+// Pin untuk kartu SD
+#define SD_CS 13
+
+void setup() {
+    Serial.begin(115200);
+
+    // Inisialisasi kartu SD
+    if (!SD.begin(SD_CS)) 
+        Serial.println("Kartu SD gagal diinisialisasi!");
+        return;
+    }
+    Serial.println("Kartu SD berhasil diinisialisasi.");
+
+    // Membuat file baru dan menulis data
+    File file = SD.open("/example.txt", FILE_WRITE);
+    if (file) {
+        file.println("Hello, SD card!");
+        file.close();
+        Serial.println("Data berhasil ditulis ke file.");
+    } else {
+        Serial.println("Gagal membuka file untuk menulis.");
+    }
+
+    // Membaca isi file
+    file = SD.open("/example.txt");
+    if (file) {
+        Serial.println("Isi file:");
+        while (file.available()) {
+            Serial.write(file.read());
+        }
+        file.close();
+    } else {
+        Serial.println("Gagal membuka file untuk membaca.");
+    }
+}
+
+void loop() {
+    // Tidak ada kode di loop
+}
+```
+
+##### Penjelasan Pin:
+1. **SD_CS**: Pin chip select untuk kartu SD. Diatur ke GPIO 13.
+2. **SD_SCK**: Pin clock untuk komunikasi SPI.
+3. **SD_MISO**: Pin untuk menerima data dari kartu SD.
+4. **SD_MOSI**: Pin untuk mengirim data ke kartu SD.
+
+##### Catatan Penting:
+- Pastikan kartu SD diformat dengan sistem file FAT16 atau FAT32.
+- Gunakan modul pembaca kartu SD yang kompatibel dengan ESP32.
+- Periksa koneksi pin SPI untuk memastikan komunikasi yang stabil.
+
+Dengan library **SD.h**, Anda dapat dengan mudah mengelola data pada kartu SD untuk berbagai aplikasi seperti logging data sensor, menyimpan konfigurasi, atau menyimpan file lainnya.
+
 
 ```cpp
 // LoRaSPI
