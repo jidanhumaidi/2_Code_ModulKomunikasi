@@ -133,12 +133,12 @@ Wire.h adalah library yang digunakan untuk komunikasi I2C (Inter-Integrated Circ
 - Gunakan modul pembaca kartu SD yang kompatibel dengan ESP32.
 - Periksa koneksi pin SPI untuk memastikan komunikasi yang stabil.
 
-##### Contoh Penggunaan:
+##### Contoh Penggunaan (bukan termasuk kode Header.h):
 ```cpp
 #include "SD.h"
 #include "FS.h"
 
-// Pin untuk kartu SD
+// Pin untuk mengatur SPI Chip Select
 #define SD_CS 13
 
 void setup() {
@@ -192,11 +192,14 @@ void loop() {
 
 Dengan library **SD.h**, Anda dapat dengan mudah mengelola data pada kartu SD untuk berbagai aplikasi seperti logging data sensor, menyimpan konfigurasi, atau menyimpan file lainnya.
 
-
+#### LoRa SPI Configuration
 ```cpp
 // LoRaSPI
 SPIClass LoraSpi(HSPI);
+```
+Kode di atas digunakan untuk membuat instance SPI khusus untuk modul LoRa menggunakan hardware SPI (HSPI) pada ESP32. Hal ini memungkinkan komunikasi SPI yang terpisah dari SPI default (VSPI) untuk perangkat lain.
 
+```cpp
 // Switching PIN
 #define SW1 34
 #define SW2 35
