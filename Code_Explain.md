@@ -161,8 +161,8 @@ SPIClass LoraSpi(HSPI);
 
 Kode di atas digunakan untuk membuat instance SPI khusus untuk modul LoRa menggunakan hardware SPI (HSPI) pada ESP32.
 
-### 10.2 Penjelasan Kelas dan Fungsi
-#### Kelas
+### 10.2 Kelas
+Kelas itu seperti design rumah yang siap untuk dibangun (objek). 
 Kelas mendefinisikan atribut (data) dan metode (fungsi) yang dapat digunakan untuk membuat objek.
 
 ```cpp
@@ -175,18 +175,98 @@ class MyClass {
 };
 ```
 
-#### Fungsi
+### 10.3 Fungsi
 Fungsi adalah blok kode yang dirancang untuk melakukan tugas tertentu.
 
-```cpp
-#define SW1 34
-#define SW2 35
-```
 
 ### 10.3 Restart Device
 ```cpp
 void restartDevice(String Message, int delay_s) {
     customSerial.println(Message);
+    ESP.restart();
+}
+```
+
+```cpp
+
+// Switching PIN
+#define SW1 34
+#define SW2 35
+
+// Select button
+#define SELECT_BUTTON 4
+int mode = 0;
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+//======== Timing ========
+unsigned long currentMillis;
+unsigned long previousMillisRead = 0;
+unsigned long previousAckMillisRead = 0;
+unsigned long previousPublishMillisRead = 0;
+
+// Global Variable
+float wspeed, wdirect, temp, hum, rain;
+int iradian, atmp;
+
+// Append log data to SDCard
+void appendFile(fs::FS &fs, const char *path, const char *message)
+{
+    customSerial.printf("Appending to file: %s\n", path);
+
+    File file = fs.open(path, FILE_APPEND);
+    if (!file)
+    {
+        // If the file doesn't exist, create it
+        file = fs.open(path, FILE_WRITE);
+        if (!file)
+        {
+            customSerial.println("Failed to create or open file");
+            display.fillRect(0, 50, 128, 40, SSD1306_BLACK);
+            display.display();
+            display.setCursor(0, 55);
+            display.print("Failed to write log");
+            display.display();
+            return;
+        }
+    }
+
+    if (file.print(message))
+    {
+        customSerial.println("Message appended");
+    }
+    else
+    {
+        display.fillRect(0, 50, 128, 40, SSD1306_BLACK);
+        display.display();
+        display.setCursor(0, 55);
+        display.print("Failed to write log");
+        display.display();
+        customSerial.println("Append failed");
+    }
+
+    file.close();
+}
+
+// restart if init module failed
+void restartDevice(String Message, int delay_s)
+{
+    customSerial.println(Message);
+
+    display.setCursor(0, 10);
+    display.print(Message);
+    display.display();
+    customSerial.println("Restart in : ");
+    for(int i=delay_s; i>=0; i--){
+      display.fillRect(0, 50, 128, 30, SSD1306_BLACK);
+      display.setCursor(0, 55);
+      display.print("      Restart in " + String(i) + "s");
+      display.display();
+      customSerial.print(" " + String(i));
+      delay(1000);
+    }
+    display.clearDisplay();
+    display.display();
     ESP.restart();
 }
 ```
