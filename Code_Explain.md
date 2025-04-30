@@ -159,7 +159,10 @@ void setup() {
 SPIClass LoraSpi(HSPI);
 ```
 
-Kode di atas digunakan untuk membuat instance SPI khusus untuk modul LoRa menggunakan hardware SPI (HSPI) pada ESP32.
+1. SPIClass itu library bawaan dari ESP32 yang digunakan untuk komunikasi SPI.
+2. LoraSpi itu nama objek dari kelas SPIClass buat bikin jalur komunikasi SPI.
+3. HSPI itu mode SPI yang digunakan pada ESP32. Ada dua mode SPI di ESP32: VSPI dan HSPI. HSPI adalah SPI hardware kedua yang ada di ESP32.
+
 
 ### 10.2 Kelas
 Kelas itu seperti design rumah yang siap untuk dibangun (objek). 
@@ -174,9 +177,18 @@ class MyClass {
         }
 };
 ```
+1. **MyClass** adalah nama kelas.
+2. **myAttribute** adalah atribut dari kelas yang menyimpan data.
+3. **myMethod()** adalah metode dari kelas yang berisi kode yang dapat dijalankan.
+4. **public** adalah akses modifier yang menentukan visibilitas atribut dan metode. Dalam hal ini, atribut dan metode dapat diakses dari luar kelas.
+5. **void** adalah tipe pengembalian dari metode, yang berarti tidak mengembalikan nilai apa pun.
 
-### 10.3 Fungsi
-Fungsi adalah blok kode yang dirancang untuk melakukan tugas tertentu.
+Maka bila kita ingin gunakan kelas diatas kita tinggal menuliskan:
+```cpp
+MyClass myObject; // Membuat objek dari kelas MyClass
+myObject.myAttribute = 10; // Mengakses atribut
+```
+Maka outputnya adalah: 10, 
 
 
 ### 10.3 Restart Device
