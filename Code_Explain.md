@@ -188,19 +188,10 @@ Maka bila kita ingin gunakan kelas diatas kita tinggal menuliskan:
 MyClass myObject; // Membuat objek dari kelas MyClass
 myObject.myAttribute = 10; // Mengakses atribut
 ```
-Maka outputnya adalah: 10, 
+Maka myAttribute punya nilai 10 sekarang.
 
-
-### 10.3 Restart Device
+## 11. Switching dan Select Button Configuration
 ```cpp
-void restartDevice(String Message, int delay_s) {
-    customSerial.println(Message);
-    ESP.restart();
-}
-```
-
-```cpp
-
 // Switching PIN
 #define SW1 34
 #define SW2 35
@@ -208,19 +199,50 @@ void restartDevice(String Message, int delay_s) {
 // Select button
 #define SELECT_BUTTON 4
 int mode = 0;
+```
+int mode = 0; adaalah variabel untuk mode saat ini.
 
+## 12. Fungsi Setup
+```cpp
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+```
 
-//======== Timing ========
+Kode diatas membuat objek display dari kelas Adafruit_SSD1306 dengan lebar 128 piksel dan tinggi 64 piksel. Parameter -1 menunjukkan bahwa tidak ada pin reset yang digunakan .&Wire adalah objek I2C yang digunakan untuk komunikasi dengan layar OLED. Maksud dari & adalah untuk mengirimkan alamat dari objek Wire ke dalam konstruktor Adafruit_SSD1306. 
+- & adalah operator yang digunakan untuk mendapatkan alamat dari variabel. 
+- Operator ini memungkinkan kita untuk mengakses lokasi memori dari variabel yang bersangkutan, sehingga kita dapat mengoperasikan objek dengan lebih efisien.
+- Dengan menggunakan &Wire, kita memberi tahu konstruktor Adafruit_SSD1306 bahwa kita ingin menggunakan objek Wire yang sudah ada untuk komunikasi I2C.
+
+## 13. Timing
+```cpp
 unsigned long currentMillis;
-unsigned long previousMillisRead = 0;
-unsigned long previousAckMillisRead = 0;
-unsigned long previousPublishMillisRead = 0;
+```
+CurrentMillis adalah variabel untuk menyimpan waktu saat ini dalam milidetik. Ini digunakan untuk menghitung waktu yang telah berlalu sejak program dimulai.
 
+```cpp
+unsigned long previousMillisRead = 0;
+```
+
+
+```cpp
+unsigned long previousAckMillisRead = 0;
+```
+
+```cpp
+unsigned long previousPublishMillisRead = 0;
+```
+
+## 14. Unsgined Long
+Unsigned long adalah tipe data yang digunakan untuk menyimpan angka bulat positif. Tipe data ini memiliki rentang yang lebih besar dibandingkan dengan tipe data long biasa, karena tidak menyimpan nilai negatif. Unsigned long biasanya digunakan untuk menghitung waktu, seperti dalam kasus ini, di mana kita menghitung waktu dalam milidetik. Jarak maksimal yang dapat disimpan dalam unsigned long adalah 0 hingga 4.294.967.295 (2^32 - 1).
+
+
+## 15. Global Variable
+```cpp
 // Global Variable
 float wspeed, wdirect, temp, hum, rain;
 int iradian, atmp;
+```
 
+```cpp
 // Append log data to SDCard
 void appendFile(fs::FS &fs, const char *path, const char *message)
 {
@@ -259,7 +281,9 @@ void appendFile(fs::FS &fs, const char *path, const char *message)
 
     file.close();
 }
+```
 
+```cpp
 // restart if init module failed
 void restartDevice(String Message, int delay_s)
 {
