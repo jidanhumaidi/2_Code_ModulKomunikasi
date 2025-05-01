@@ -1,17 +1,48 @@
+# Transmitter
+## 1. Include Libraries
+```cpp
 #include <ModbusMaster.h>
+```
+`ModbusMaster.h` adalah library yang digunakan untuk komunikasi Modbus RTU. Contoh penggunaan dapat dilihat pada [ModbusMaster](https://github.com/4-20ma/ModbusMaster). 
+
+## 2. Define Constants and Variables
+```cpp
 #define slaveID 0xFF
+```
+- `slaveID` adalah ID dari slave yang akan digunakan untuk komunikasi Modbus RTU. Pada contoh ini, slaveID diatur menjadi 0xFF.
+- `0xFF` adalah ID default dari slave yang digunakan pada alat ukur. 
+
+## 3. Define Modbus Register Address
+```cpp
 #define TEMPERATURE_REGISTER 0x0009
+```
+`0x0009` adalah alamat register untuk baca data alat ukur.
 
+## 4. Define Variables 
+```cpp
 ModbusMaster node;
+```
+`ModbusMaster node` adalah deklarasi sebuah objek bernama node dari kelas ModbusMaster yang berasal dari library ModbusMaster.h
 
+## 5. Define Variables for Data Storage
+```cpp
 char dataSendJson[512];
-char dataLogJson[1024]; 
-// char dataLogJson[512];
+char dataLogJson[512];
+```
+`dataSendJson` dan `dataLogJson` adalah array karakter yang digunakan untuk menyimpan data dalam format JSON. Ukuran array diatur menjadi 512 karakter.
 
+## 6. Define Variables for Sensor Data
+```cpp
 bool ack_status = true;
 unsigned long randomDelay = 0;
 bool waiting = false;
+```
+- `ack_status` adalah variabel boolean yang digunakan untuk menandakan status ACK dari server. act_status diberi nilai true berarti kondisi awal dari ACK adalah true. Dan true berarti ACK sudah diterima.
+- `randomDelay` adalah variabel untuk menyimpan delay acak yang digunakan untuk menghindari tabrakan data saat pengiriman.
+- `waiting` adalah variabel boolean yang digunakan untuk menandakan apakah sistem sedang menunggu data dari server.
 
+## 7. Modbus RTU Function
+```cpp
 void modbusRTU()
 {
     int buffersize = 7;
@@ -54,7 +85,9 @@ void modbusRTU()
         customSerial.println(result);
     }
 }
+```
 
+```cpp
 void setData()
 {
     modbusRTU();
