@@ -86,7 +86,72 @@ void modbusRTU()
     }
 }
 ```
+### 7.1 Buffersize 
+```cpp
+int buffersize = 7;
+```
+`buffersize` adalah ukuran buffer yang digunakan untuk menyimpan data dari alat ukur. Pada contoh ini, ukuran buffer diatur menjadi 7.
 
+### 7.2 Data Array
+```cpp
+float data[buffersize];
+```
+`data[buffersize]` adalah array bertipe float yang digunakan untuk menyimpan data dari alat ukur. Ukuran array diatur sesuai dengan `buffersize` yang telah didefinisikan sebelumnya.
+
+### 7.3 Read Holding Registers
+
+```cpp
+uint8_t i;
+uint8_t j;
+uint8_t result;
+```
+
+```cpp
+result = node.readHoldingRegisters(TEMPERATURE_REGISTER, 12);
+```
+```cpp
+if (result == node.ku8MBSuccess)
+    {}
+```
+
+
+```cpp
+temp = (node.getResponseBuffer(0) / 100) - 40; // Temperature in °C
+hum = node.getResponseBuffer(1) / 100.0; // Humidity in percentage
+atmp = (int)node.getResponseBuffer(2) / 10.0; // Atmospheric pressure in hPa
+wspeed = node.getResponseBuffer(3) / 100.0; // Wind speed in m/s
+wdirect = node.getResponseBuffer(4) / 10.0; // Wind direction in degrees
+rain = node.getResponseBuffer(5) / 10.0; // Rainfall in mm
+iradian = (int)node.getResponseBuffer(6); // Radiation in W/m^2
+```
+
+
+```cpp
+customSerial.println();
+customSerial.print("Temperature : ");
+customSerial.println(temp);
+customSerial.print("Humadity : ");
+customSerial.println(hum);
+customSerial.print("Atmosphere : ");
+customSerial.println(atmp);
+customSerial.print("Wind Speed : ");
+customSerial.println(wspeed);
+customSerial.print("Wind Direction : ");
+customSerial.println(wdirect);
+customSerial.print("Rainfall : ");
+customSerial.println(rain);
+customSerial.print("Iradian : ");
+customSerial.println(iradian);
+```
+
+
+
+
+
+
+
+
+## 8. Set Data Function
 ```cpp
 void setData()
 {
