@@ -263,7 +263,7 @@ iradian = (int)node.getResponseBuffer(6); // Radiation in W/m^2
 ```
 Kode yang Anda tunjukkan adalah proses pengambilan data dari berbagai sensor cuaca setelah berhasil membaca data dari perangkat. Mari saya jelaskan satu per satu:
 
-```
+```cpp
 temp = (node.getResponseBuffer(0) / 100) - 40;      // Temperature in °C
 hum = node.getResponseBuffer(1) / 100.0;           // Humidity in percentage
 atmp = (int)node.getResponseBuffer(2) / 10.0;      // Atmospheric pressure in hPa
@@ -342,14 +342,8 @@ customSerial.print("Iradian : ");
 customSerial.println(iradian);
 ```
 
-
-
-
-
-
-
-
 ## 8. Set Data Function
+Fungsi `setData()` bertanggung jawab untuk mengambil data sensor dan menampilkannya dalam format JSON serta di layar OLED.
 ```cpp
 void setData()
 {
@@ -410,3 +404,52 @@ void setData()
     
     display.display();
 }
+```
+### 8.1 Getting Data
+```cpp
+void setData()
+{
+   modbusRTU();
+   char tmp[10];
+```
+- `void setData()` - Mendefinisikan fungsi yang tidak mengembalikan nilai
+- `modbusRTU()` - Memanggil fungsi untuk membaca data sensor
+- `char tmp[10]` - Array karakter untuk menyimpan nilai suhu sementara
+
+### 8.2 Temperature Formatting
+```cpp
+if (temp < 0)
+   sprintf(tmp, "-%d", (int)temp);
+else
+   sprintf(tmp, "%d", (int)temp);
+```
+- Memeriksa apakah suhu negatif
+- `sprintf()` memformat suhu ke string:
+  - Jika negatif: menambah tanda minus
+  - Jika positif: langsung nilai integer
+
+### 8.3 JSON Data Formatting
+```cpp
+sprintf(dataLogJson, "{...}");
+sprintf(dataSendJson, "{...}");
+```
+- Membuat dua string JSON berbeda:
+  - `dataLogJson` - Format lengkap untuk logging
+  - `dataSendJson` - Format ringkas untuk pengiriman
+- Menggunakan `sprintf()` untuk memformat nilai sensor ke string
+- `abs()` digunakan untuk mendapatkan nilai absolut dari bagian desimal
+
+### 8.4 Display Output
+```cpp
+display.fillRect(0, 10, 128, 40, SSD1306_BLACK);
+display.setCursor(0, 10);
+// ... display commands ...
+display.display();
+```
+- Menghapus area tampilan dengan `fillRect()`
+- Mengatur posisi cursor untuk setiap baris
+- Menampilkan nilai sensor dengan format dan label yang sesuai
+- `display.display()` memperbarui tampilan OLED
+
+```
+
