@@ -342,6 +342,8 @@ customSerial.print("Iradian : ");
 customSerial.println(iradian);
 ```
 
+Kesimpilannya, fungsi modbusRTU() bertugas untuk membaca data dari alat ukur menggunakan protokol Modbus RTU. Setelah berhasil membaca data, fungsi ini juga mencetak hasil pembacaan ke Serial Monitor untuk pemantauan.
+
 ## 8. Set Data Function
 Fungsi `setData()` bertanggung jawab untuk mengambil data sensor dan menampilkannya dalam format JSON serta di layar OLED.
 ```cpp
@@ -428,7 +430,25 @@ else
   - Jika negatif: menambah tanda minus
   - Jika positif: langsung nilai integer
 
-### 8.3 JSON Data Formatting
+### 8.3 Sprintf JSON Data Formatting
+`sprintf()` adalah fungsi untuk memformat string, seperti membuat template dengan isian yang bisa diubah. Contoh:
+
+```cpp
+sprintf(buffer, "Suhu: %d.%02d", 25, 50);  // Hasilnya "Suhu: 25.50"
+```
+
+Komponen `sprintf()`:
+- `buffer`: tempat menyimpan hasil string
+- `"format"`: template dengan penanda khusus
+- `nilai`: data yang akan dimasukkan ke template
+
+Penanda format umum:
+- `%d`: angka bulat
+- `%s`: string
+- `%f`: angka desimal
+- `.02d`: angka dengan 2 digit
+
+### 8.4 JSON Data Formatting
 ```cpp
 sprintf(dataLogJson, "{...}");
 sprintf(dataSendJson, "{...}");
@@ -439,7 +459,7 @@ sprintf(dataSendJson, "{...}");
 - Menggunakan `sprintf()` untuk memformat nilai sensor ke string
 - `abs()` digunakan untuk mendapatkan nilai absolut dari bagian desimal
 
-### 8.4 Display Output
+### 8.5 Display Output
 ```cpp
 display.fillRect(0, 10, 128, 40, SSD1306_BLACK);
 display.setCursor(0, 10);
@@ -450,6 +470,5 @@ display.display();
 - Mengatur posisi cursor untuk setiap baris
 - Menampilkan nilai sensor dengan format dan label yang sesuai
 - `display.display()` memperbarui tampilan OLED
-
-```
+- Menambahkan fungsi untuk mengupdate data secara berkala
 
