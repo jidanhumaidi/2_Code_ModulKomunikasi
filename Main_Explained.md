@@ -1,7 +1,12 @@
+# Main
+```cpp
 #include "Header.h"
 #include "TransmitterMode.h"
 #include "ReceiverMode.h"
+```
 
+## 1. Fungsi SaveLog
+```cpp
 void saveLog() {
   for (const SensorData &entry : node_data) {
     LocalTime();
@@ -35,6 +40,50 @@ void saveLog() {
     appendFile(SD, "/log_receiver.txt", dataLogJson);
   }
 }
+```
+### 1.1 
+```cpp
+void saveLog() {}
+```
+```cpp
+  for (const SensorData &entry : node_data) {
+    LocalTime();
+    char tmp[10];
+    //.....
+  }
+```
+```cpp
+    if (entry.temp < 0)
+      sprintf(tmp, "-%d", (int)entry.temp);
+    else
+      sprintf(tmp, "%d", (int)entry.temp);
+    sprintf(dataLogJson, "{"
+                         "\"ID\": %d, "
+                         "\"Timestamp\": \"%s\", "
+                         "\"Iradian\": %d, "
+                         "\"WindSpeed\": %d.%02d, "
+                         "\"WindDirection\": %d.%02d, "
+                         "\"Temperature\": %s.%02d, "
+                         "\"RelativeHumidity\": %d.%02d, "
+                         "\"AtmosphericPressure\": %d, "
+                         "\"Rainfall\": %d.%02d"
+                         "},\n",
+            entry.id,
+            TimeNow,
+            entry.iradian,
+            (int)entry.wspeed, abs((int)(entry.wspeed * 100) % 100),
+            (int)entry.wdirect, abs((int)(entry.wdirect * 100) % 100),
+            tmp, abs((int)(entry.temp * 100) % 100),
+            (int)entry.hum, abs((int)(entry.hum * 100) % 100),
+            entry.atmp,
+            (int)entry.rain, abs((int)(entry.rain * 100) % 100));
+```
+```cpp
+    customSerial.println("Saving data from ID-" + String(entry.id) + "...");
+    appendFile(SD, "/log_receiver.txt", dataLogJson);
+```
+
+```cpp
 
 void setup() {
   //initialize customSerial Monitor
