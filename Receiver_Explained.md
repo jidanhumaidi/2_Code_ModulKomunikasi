@@ -204,6 +204,7 @@ void saveLog()
 }
 ```
 
+```cpp
 // send data using MQTT Protocol
 void sendData()
 {
