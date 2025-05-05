@@ -1,19 +1,29 @@
+# Receiver 
+
+## 1 
+```cpp
 #include "ArduinoJson.h"
 #include <vector>
 #include "time.h"
 #include "stdbool.h"
+```
 
+```cpp
 char TimeNow[30];
 const char *ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 21600;
 const int daylightOffset_sec = 3600;
+```
 
+```cpp
 #include <PubSubClient.h>
 #define mqtt_server "192.168.220.122"
 #define mqtt_port 1883
 #define mqtt_username ""
 #define mqtt_password ""
+```
 
+```cpp
 String client_id = "NODE-" + String(DEV_ID);
 String TOPIC_IR = "PLN_NP_Testing_Iradian_";
 String TOPIC_WS = "PLN_NP_Testing_WindSpeed_";
@@ -22,7 +32,9 @@ String TOPIC_TEMP = "PLN_NP_Testing_Temperature_";
 String TOPIC_HUM = "PLN_NP_Testing_Humidity_";
 String TOPIC_ATMP = "PLN_NP_Testing_AtmosphericPressure_";
 String TOPIC_RAIN = "PLN_NP_Testing_RainFall_";
+```
 
+```cpp
 WiFiClient wifiClient;
 
 EthernetClient ethClient;
@@ -31,13 +43,18 @@ byte mac[] = { 0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0xEF };
 PubSubClient client;
 
 String LoRaData = "";
+```
 
+
+```cpp
 // set time delay to send ack message
 #define DELAY_ACK 20000
 // set interval to send data via MQTT Protocol
 // #define INTERVAL_MQTT 300000
 #define INTERVAL_MQTT 100000 //nyoba aja biar cepett
+```
 
+```cpp
 // to store received data
 struct SensorData
 {
@@ -50,10 +67,14 @@ struct SensorData
     int iradian;
     int atmp;
 };
+```
 
+```cpp
 std::vector<SensorData> node_data;
 String ack_message = "";
+```
 
+```cpp
 void reconnect()
 {
     int bcount = 0;
@@ -130,7 +151,9 @@ void reconnect()
         }
     }
 }
+```
 
+```cpp
 void LocalTime()
 {
     struct tm timeinfo;
@@ -142,43 +165,44 @@ void LocalTime()
     strftime(TimeNow, 30, "%H:%M:%S %x", &timeinfo);
     customSerial.println(TimeNow);
 }
-
+```cpp
 // save log to SDCard
-// void saveLog()
-// {
-//     for (const SensorData &entry : node_data)
-//     {
-//         LocalTime();
-//         char tmp[10];
-//         if (entry.temp < 0)
-//             sprintf(tmp, "-%d", (int)entry.temp);
-//         else
-//             sprintf(tmp, "%d", (int)entry.temp);
+void saveLog()
+{
+    for (const SensorData &entry : node_data)
+    {
+        LocalTime();
+        char tmp[10];
+        if (entry.temp < 0)
+            sprintf(tmp, "-%d", (int)entry.temp);
+        else
+            sprintf(tmp, "%d", (int)entry.temp);
 
-//         sprintf(dataLogJson, "{"
-//                              "\"ID\": %d, "
-//                              "\"Timestamp\": \"%s\", "
-//                              "\"Iradian\": %d, "
-//                              "\"WindSpeed\": %d.%02d, "
-//                              "\"WindDirection\": %d.%02d, "
-//                              "\"Temperature\": %s.%02d, "
-//                              "\"RelativeHumidity\": %d.%02d, "
-//                              "\"AtmosphericPressure\": %d, "
-//                              "\"Rainfall\": %d.%02d"
-//                              "},\n",
-//                 entry.id,
-//                 TimeNow,
-//                 entry.iradian,
-//                 (int)entry.wspeed, abs((int)(entry.wspeed * 100) % 100),
-//                 (int)entry.wdirect, abs((int)(entry.wdirect * 100) % 100),
-//                 tmp, abs((int)(entry.temp * 100) % 100),
-//                 (int)entry.hum, abs((int)(entry.hum * 100) % 100),
-//                 entry.atmp,
-//                 (int)entry.rain, abs((int)(entry.rain * 100) % 100));
-//         customSerial.println("Saving data from ID-" + String(entry.id) + "...");
-//         appendFile(SD, "/log_receiver.txt", dataLogJson);
-//     }
-// }
+        sprintf(dataLogJson, "{"
+                             "\"ID\": %d, "
+                             "\"Timestamp\": \"%s\", "
+                             "\"Iradian\": %d, "
+                             "\"WindSpeed\": %d.%02d, "
+                             "\"WindDirection\": %d.%02d, "
+                             "\"Temperature\": %s.%02d, "
+                             "\"RelativeHumidity\": %d.%02d, "
+                             "\"AtmosphericPressure\": %d, "
+                             "\"Rainfall\": %d.%02d"
+                             "},\n",
+                entry.id,
+                TimeNow,
+                entry.iradian,
+                (int)entry.wspeed, abs((int)(entry.wspeed * 100) % 100),
+                (int)entry.wdirect, abs((int)(entry.wdirect * 100) % 100),
+                tmp, abs((int)(entry.temp * 100) % 100),
+                (int)entry.hum, abs((int)(entry.hum * 100) % 100),
+                entry.atmp,
+                (int)entry.rain, abs((int)(entry.rain * 100) % 100));
+        customSerial.println("Saving data from ID-" + String(entry.id) + "...");
+        appendFile(SD, "/log_receiver.txt", dataLogJson);
+    }
+}
+```
 
 // send data using MQTT Protocol
 void sendData()
@@ -234,3 +258,4 @@ void sendData()
         customSerial.println("Data sent!");
     }
 }
+```
