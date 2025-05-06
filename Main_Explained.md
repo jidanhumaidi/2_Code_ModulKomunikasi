@@ -984,6 +984,8 @@ else if (configLine.startsWith("PASS:")) {
 - Fungsi ini juga akan menyimpan data yang dikirim ke dalam file log di SD card.
 
 ## 4. Fungsi Loop
+Fungsi loop adalah fungsi utama yang akan terus berjalan setelah fungsi setup selesai. Fungsi ini berfungsi untuk memproses data yang diterima dari LoRa dan mengirimkan data jika diperlukan.
+
 ```cpp
 void loop() {
   currentMillis = millis();
@@ -1001,7 +1003,7 @@ void loop() {
       //read packet
       while (LoRa.available()) {
         LoRaData = LoRa.readString();
-     }
+      }
       if (LoRaData.startsWith("ACK#")) {
         customSerial.print("ACK Message Received : ");
         customSerial.println(LoRaData);
@@ -1037,6 +1039,287 @@ void loop() {
         }
       }
     }
+    if(ack_status == false){
+      if(waiting){
+        display.fillRect(0, 55, 128, 40, SSD1306_BLACK);
+        display.setCursor(0, 55);
+        display.println("Waiting " + String(randomDelay-currentMillis) + " ms");
+        display.display();
+        if(currentMillis >= randomDelay){
+          customSerial.print("Waiting time over, sending data..");
+          appendFile(SD, "/log_transmitter.txt", dataLogJson);
+          LoRa.beginPacket();
+          LoRa.print(dataSendJson);
+          LoRa.endPacket();
+          customSerial.print(dataLogJson);
+          
+          display.fillRect(0, 50, 128, 40, SSD1306_BLACK);
+          display.display();
+          display.setCursor(0, 55);
+          display.println("Sending data..");
+          display.display();
+          
+          waiting = false;
+        }
+      }
+    }
+  }
+  
+  if((mode == 1)||(mode == 2)){
+    int packetSize = LoRa.parsePacket();
+    if (packetSize) {
+      //received a packet
+      customSerial.print("Received packet ");
+      //read packet
+      while (LoRa.available()) {
+        LoRaData = LoRa.readString();
+      }
+      customSerial.println(LoRaData);
+      DynamicJsonDocument doc(1024);
+      DeserializationError error = deserializeJson(doc, LoRaData);
+      if (error) {
+        customSerial.print("ERROR : Invalid Data - ");
+        customSerial.println(error.c_str());
+      } else {
+        SensorData received_data;
+        received_data.id = doc["ID"];
+        received_data.iradian = doc["Ir"];
+        received_data.wspeed = doc["WS"];
+        received_data.wdirect = doc["WD"];
+        received_data.temp = doc["Temp"];
+        received_data.hum = doc["Hum"];
+        received_data.atmp = doc["AP"];
+        received_data.rain = doc["Rain"];
+        
+        String result = "ID : " + String(received_data.id) + "\n" + 
+                 "Iradian : " + String(received_data.iradian) + "\n" + 
+                 "WindSpeed : " + String(received_data.wspeed) + "\n" + 
+                 "WindDirection : " + String(received_data.wdirect) + "\n" + 
+                 "Temperature : " + String(received_data.temp) + "\n" + 
+                 "Humidity : " + String(received_data.hum) + "\n" + 
+                 "AtmosphericPressure : " + String(received_data.atmp) + "\n" + 
+                 "Rainfall : " + String(received_data.rain);
+        customSerial.println(result);
+        bool is_collected = false;
+        // Output the data to the customSerial port
+        for (const SensorData& entry : node_data) {
+          if(received_data.id == entry.id){
+            is_collected = true;
+            customSerial.println("Data From This Node is Already Collected");
+          }
+          customSerial.print("ID: ");
+          customSerial.println(entry.id);
+          display.fillRect(0, 45, 128, 10, SSD1306_BLACK);
+          display.setCursor(0, 45);
+          display.println("Received from " + String(entry.id));
+          display.display();
+        }
+        if(!is_collected){
+          // is it new data?
+          node_data.push_back(received_data);
+        }
+      }
+    }
+    if (currentMillis - previousAckMillisRead >= DELAY_ACK) {
+      previousAckMillisRead = currentMillis;
+      ack_message = "ACK#";
+      display.fillRect(0, 15, 128, 50, SSD1306_BLACK);
+      display.setCursor(0, 15);
+      display.print("Received(ID): ");
+      for (const SensorData &entry : node_data)
+      {
+        ack_message += String(entry.id) + "#";
+        display.print(String(entry.id) + ", ");
+      }
+      display.display();
+      
+      LoRa.beginPacket();
+      LoRa.print(ack_message);
+      LoRa.endPacket();
+      delay(100);
+      LoRa.beginPacket();
+      LoRa.print(ack_message);
+      LoRa.endPacket();
+      delay(100);
+      LoRa.beginPacket();
+      LoRa.print(ack_message);
+      LoRa.endPacket();
+      
+      customSerial.print("Sending ACK message : ");
+      customSerial.println(ack_message);
+
+      display.fillRect(50, 55, 128, 20, SSD1306_BLACK);
+      display.setCursor(50, 55);
+      display.println("ACK Sent");
+      display.display();
+    }
+    if (currentMillis - previousPublishMillisRead >= INTERVAL_MQTT) {
+      previousPublishMillisRead = currentMillis;
+      // save log to sdcard
+      saveLog();
+      // send data with mqtt protocol
+      sendData();
+      // clear data
+      node_data.clear();
+    }
+    
+    int remaining_s = ((INTERVAL_MQTT - (currentMillis - previousPublishMillisRead))/1000);
+    int remaining_m = remaining_s/60;
+    remaining_s = remaining_s - (remaining_m*60);
+    display.fillRect(0, 55, 128, 20, SSD1306_BLACK);
+    display.setCursor(0, 55);
+    display.println(String(remaining_m) + "m" + String(remaining_s) + "s");
+    display.setCursor(55, 55);
+    display.println("ACK in " + String((DELAY_ACK - (currentMillis - previousAckMillisRead))/1000) + "s");
+    display.display();
+    
+  }
+}
+```
+
+### 4.1 Fungsi Loop
+```cpp
+void loop() {
+  currentMillis = millis();
+```
+- `void loop() {` mendeklarasikan fungsi loop yang akan terus berjalan setelah fungsi setup selesai.
+- `currentMillis = millis();` menyimpan waktu saat ini dalam variabel `currentMillis`. Fungsi `millis()` mengembalikan jumlah milidetik sejak perangkat dinyalakan. Variabel ini digunakan untuk menghitung waktu yang telah berlalu.
+- `currentMillis` adalah variabel yang menyimpan waktu saat ini dalam milidetik. Ini digunakan untuk menghitung waktu yang telah berlalu sejak perangkat dinyalakan.
+- `millis()` adalah fungsi yang mengembalikan jumlah milidetik sejak perangkat dinyalakan. Fungsi ini digunakan untuk menghitung waktu yang telah berlalu.
+- `currentMillis` akan diperbarui setiap kali fungsi loop dijalankan.
+
+### 4.2 Mode Transmitter
+```cpp
+  if(mode == 0){
+    if (currentMillis - previousMillisRead >= 5000) {
+      previousMillisRead = currentMillis;
+      setData();
+    }
+```
+- `if(mode == 0){` memeriksa apakah mode adalah TRANSMITTER. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `if (currentMillis - previousMillisRead >= 5000) {` memeriksa apakah waktu yang telah berlalu sejak pembacaan terakhir lebih dari 5 detik. Jika ya, maka fungsi `setData()` akan dipanggil untuk mengatur data yang akan dikirim.
+- `previousMillisRead = currentMillis;` memperbarui waktu pembacaan terakhir dengan waktu saat ini. Ini digunakan untuk menghitung waktu yang telah berlalu sejak pembacaan terakhir.
+- `setData();` adalah fungsi yang digunakan untuk mengatur data yang akan dikirim oleh transmitter. Fungsi ini akan mengumpulkan data dari sensor dan mengonversinya menjadi format JSON sebelum mengirimnya melalui modul LoRa.
+- Fungsi ini juga akan menyimpan data yang dikirim ke dalam file log di SD card.
+
+### 4.3 Menerima Data LoRa
+```cpp
+    int packetSize = LoRa.parsePacket();
+    if (packetSize) {
+      //received a packet
+      customSerial.print("Received packet ");
+      //read packet
+      while (LoRa.available()) {
+        LoRaData = LoRa.readString();
+     }
+```
+- `int packetSize = LoRa.parsePacket();` memeriksa apakah ada paket yang diterima melalui modul LoRa. Jika ada, maka ukuran paket akan disimpan dalam variabel `packetSize`.
+- `if (packetSize) {` memeriksa apakah ada paket yang diterima. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `customSerial.print("Received packet ");` mencetak pesan bahwa paket telah diterima ke serial monitor.
+- `while (LoRa.available()) {` memeriksa apakah ada data yang tersedia untuk dibaca dari modul LoRa. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `LoRaData = LoRa.readString();` membaca data yang diterima dari modul LoRa dan menyimpannya ke dalam variabel `LoRaData`. Variabel ini bertipe `String` yang merupakan tipe data string di Arduino.
+- `LoRa.readString()` adalah fungsi yang membaca data dari modul LoRa hingga karakter newline (`\n`) dan mengembalikan hasilnya sebagai string.
+
+### 4.4 Menerima Pesan ACK
+```cpp
+      if (LoRaData.startsWith("ACK#")) {
+        customSerial.print("ACK Message Received : ");
+        customSerial.println(LoRaData);
+        // Remove "ACK," from the beginning of the string
+        LoRaData.remove(0, 4);
+```
+- `if (LoRaData.startsWith("ACK#")) {` memeriksa apakah data yang diterima dimulai dengan "ACK#". Jika ya, maka program akan melanjutkan ke bagian ini.
+- `customSerial.print("ACK Message Received : ");` mencetak pesan bahwa pesan ACK telah diterima ke serial monitor.
+- `customSerial.println(LoRaData);` mencetak data ACK yang diterima ke serial monitor.
+- `LoRaData.remove(0, 4);` menghapus "ACK," dari awal string `LoRaData`. Ini dilakukan untuk memisahkan ID dari data ACK yang diterima.
+
+### 4.5 Memproses Data ACK
+```cpp
+        // Split the remaining string by commas
+        int delimiterPos;
+        ack_status = false;
+        while ((delimiterPos = LoRaData.indexOf('#')) != -1) {
+          String valueStr = LoRaData.substring(0, delimiterPos);
+          int value = valueStr.toInt();
+          LoRaData.remove(0, delimiterPos + 1);
+```
+- `int delimiterPos;` mendeklarasikan variabel `delimiterPos` yang akan digunakan untuk menyimpan posisi pemisah dalam string. Delimiter adalah karakter '#' yang digunakan untuk memisahkan ID dari data ACK yang diterima. Contoh: "ACK#123#456#789#" yang berarti ID 123, 456, dan 789.
+- `ack_status = false;` mengatur status ACK menjadi false. Ini digunakan untuk menandakan bahwa ACK belum diterima.
+- `while ((delimiterPos = LoRaData.indexOf('#')) != -1) {` memeriksa apakah ada karakter '#' dalam string `LoRaData`. Jika ada, maka program akan melanjutkan ke bagian ini.
+   - `delimiterPos = LoRaData.indexOf('#');` mencari posisi karakter '#' dalam string `LoRaData` dan menyimpannya dalam variabel `delimiterPos`. Jika tidak ditemukan, maka nilai `delimiterPos` akan menjadi -1. -1 adalah nilai yang menunjukkan bahwa karakter '#' tidak ditemukan dalam string.
+   - `delimiterPos` adalah variabel yang menyimpan posisi karakter '#' dalam string `LoRaData`. Ini digunakan untuk memisahkan ID dari data ACK yang diterima.
+   - `indexOf('#')` adalah fungsi yang mencari posisi karakter '#' dalam string `LoRaData`. Jika ditemukan, maka fungsi ini akan mengembalikan posisi karakter tersebut. Jika tidak ditemukan, maka fungsi ini akan mengembalikan -1.
+   `!= -1` adalah kondisi yang memeriksa apakah karakter '#' ditemukan dalam string `LoRaData`. Jika ditemukan, maka program akan melanjutkan ke bagian ini.
+- `String valueStr = LoRaData.substring(0, delimiterPos);` mengambil substring dari `LoRaData` dari awal hingga posisi pemisah '#' dan menyimpannya dalam variabel `valueStr`.
+  - `substring(0, delimiterPos)` adalah fungsi yang mengambil substring dari string `LoRaData` dari indeks 0 hingga indeks `delimiterPos`. Ini digunakan untuk mendapatkan ID dari data ACK yang diterima. Contohnya "ACK#123#456#789#" akan menghasilkan substring "123" dengan delimiterPos 3 karena '#' berada di indeks 3. Berarti ambil string yang didepan delimiterPos.
+  - `valueStr` adalah variabel yang menyimpan substring dari string `LoRaData`. Ini digunakan untuk mendapatkan ID dari data ACK yang diterima.
+
+- `int value = valueStr.toInt();` mengonversi substring `valueStr` menjadi integer dan menyimpannya dalam variabel `value`. Ini digunakan untuk mendapatkan ID dari data ACK yang diterima.
+   - `toInt()` adalah fungsi yang mengonversi string menjadi integer. Ini digunakan untuk mengonversi substring `valueStr` menjadi integer.
+   - `value` adalah variabel yang menyimpan ID dari data ACK yang diterima. Ini digunakan untuk memeriksa apakah ID yang diterima sesuai dengan ID perangkat.
+   - `valueStr` adalah variabel yang menyimpan substring dari string `LoRaData`. Ini digunakan untuk mendapatkan ID dari data ACK yang diterima.
+- `LoRaData.remove(0, delimiterPos + 1);` menghapus substring yang telah diproses dari `LoRaData`. Ini dilakukan untuk memisahkan ID dari data ACK yang diterima.
+   - `remove(0, delimiterPos + 1)` adalah fungsi yang menghapus substring dari string `LoRaData` dari indeks 0 hingga indeks `delimiterPos + 1`. Ini digunakan untuk menghapus ID yang telah diproses dari string `LoRaData`. Contohnya "ACK#123#456#789#" akan menghasilkan string "456#789#" setelah pemrosesan ID 123.
+   - `LoRaData` adalah variabel yang menyimpan data ACK yang diterima. Ini digunakan untuk memproses ID dari data ACK yang diterima.
+   - `delimiterPos + 1` adalah posisi karakter '#' berikutnya setelah ID yang telah diproses. Ini digunakan untuk menghapus substring yang telah diproses dari string `LoRaData`.
+
+#### 4.5.1 While
+While adalah pernyataan yang digunakan untuk mengulangi blok kode selama kondisi tertentu terpenuhi. Contoh sintaksisnya adalah sebagai berikut:
+```cpp
+while (kondisi) {
+  // blok kode yang akan diulang
+} 
+```
+
+### 4.6 Memeriksa ID
+```cpp
+          if (value == (int)DEV_ID) {
+            customSerial.println("DEV_ID is found in the ACK message. Send Data Success!");
+            ack_status = true;
+            
+            display.fillRect(0, 50, 128, 40, SSD1306_BLACK);
+            display.setCursor(0, 55);
+            display.print("Send data : -OK-");
+            display.display();
+          }
+        }
+```
+- `if (value == (int)DEV_ID) {` memeriksa apakah ID yang diterima sama dengan ID perangkat. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `customSerial.println("DEV_ID is found in the ACK message. Send Data Success!");` mencetak pesan bahwa ID perangkat ditemukan dalam pesan ACK ke serial monitor.
+- `ack_status = true;` mengatur status ACK menjadi true. Ini digunakan untuk menandakan bahwa ACK telah diterima.
+- `display.fillRect(0, 50, 128, 40, SSD1306_BLACK);` menghapus tampilan OLED pada area tertentu untuk memperbarui informasi.
+- `display.setCursor(0, 55);` mengatur posisi kursor tampilan ke koordinat (0,55).
+- `display.print("Send data : -OK-");` menampilkan pesan "Send data : -OK-" di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
+
+### 4.7 Memeriksa Status ACK
+```cpp
+        if(ack_status == false){
+          customSerial.print("ACK data not found! ");
+          if(waiting == false){
+            int generateDelay = random(1000, 15000);
+            randomDelay = currentMillis + generateDelay;
+            waiting = true;
+            customSerial.println("Resend data in " + String(generateDelay) + "s");
+          }
+        }
+      }
+    }
+```
+- `if(ack_status == false){` memeriksa apakah status ACK adalah false. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `customSerial.print("ACK data not found! ");` mencetak pesan bahwa data ACK tidak ditemukan ke serial monitor.
+- `if(waiting == false){` memeriksa apakah status waiting adalah false. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `int generateDelay = random(1000, 15000);` menghasilkan angka acak antara 1 detik hingga 15 detik untuk menunggu sebelum mengirim ulang data.
+- `randomDelay = currentMillis + generateDelay;` menyimpan waktu tunggu dalam variabel `randomDelay`. Ini digunakan untuk menghitung waktu tunggu sebelum mengirim ulang data.
+- `waiting = true;` mengatur status waiting menjadi true. Ini digunakan untuk menandakan bahwa perangkat sedang menunggu sebelum mengirim ulang data.
+- `customSerial.println("Resend data in " + String(generateDelay) + "s");` mencetak pesan bahwa perangkat akan mengirim ulang data setelah waktu tunggu yang telah ditentukan ke serial monitor.
+- `generateDelay` adalah variabel yang menyimpan waktu tunggu sebelum mengirim ulang data. Ini digunakan untuk menghitung waktu tunggu sebelum mengirim ulang data.
+- `randomDelay` adalah variabel yang menyimpan waktu tunggu dalam milidetik. Ini digunakan untuk menghitung waktu tunggu sebelum mengirim ulang data.
+- `waiting` adalah variabel yang menyimpan status waiting. Ini digunakan untuk menandakan apakah perangkat sedang menunggu sebelum mengirim ulang data.
+- `ack_status` adalah variabel yang menyimpan status ACK. Ini digunakan untuk menandakan apakah ACK telah diterima atau tidak.
+- 
+
+```cpp
     if(ack_status == false){
       if(waiting){
         display.fillRect(0, 55, 128, 40, SSD1306_BLACK);
