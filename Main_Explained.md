@@ -209,13 +209,58 @@ Catatan:
 
 ### 2.3.2 Format JSON
 ```cpp
-sprintf(dataLogJson, "{\"ID\": %d, ...}", ...);
+    sprintf(dataLogJson, "{"
+                         "\"ID\": %d, "
+                         "\"Timestamp\": \"%s\", "
+                         "\"Iradian\": %d, "
+                         "\"WindSpeed\": %d.%02d, "
+                         "\"WindDirection\": %d.%02d, "
+                         "\"Temperature\": %s.%02d, "
+                         "\"RelativeHumidity\": %d.%02d, "
+                         "\"AtmosphericPressure\": %d, "
+                         "\"Rainfall\": %d.%02d"
+                         "},\n",
+                         ....)
 ```
 Fungsi `sprintf()` memformat data ke string JSON dengan:
 - Format specifiers:
   - `%d` - integer (ID, Iradian, AtmosphericPressure)
   - `%s` - string (Timestamp)
   - `%d.%02d` - desimal 2 digit (WindSpeed, WindDirection, Temperature, RelativeHumidity, Rainfall)
+
+#### 2.3.2.1 Sprintf
+`sprintf()` adalah fungsi C++ untuk memformat string dengan sintaks:
+```cpp
+sprintf(buffer, "format_string", arg1, arg2, ...);
+```
+
+Komponen:
+- `buffer`: Array karakter tujuan
+- `format_string`: Template string dengan format specifiers
+- `arg1, arg2, ...`: Nilai yang akan dimasukkan
+
+Format Specifiers:
+- `%d` - Integer
+- `%f` - Float
+- `%s` - String
+- `%c` - Karakter
+- `%.2f` - Float 2 desimal
+- `%02d` - Integer 2 digit dengan leading zero
+
+Contoh:
+```cpp
+char buffer[50];
+int id = 1;
+float temp = 23.45;
+sprintf(buffer, "ID:%d Temp:%.1f", id, temp);
+// Hasil: "ID:1 Temp:23.4"
+```
+
+Logika:
+1. Alokasi buffer
+2. Define format string
+3. Masukkan nilai ke placeholder
+4. Hasil disimpan ke buffer
 
 ### 2.3.3 Konversi Data
 Untuk data desimal:
