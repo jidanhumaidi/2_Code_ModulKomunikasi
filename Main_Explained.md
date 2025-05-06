@@ -313,28 +313,17 @@ int desimal = abs((int)(nilai * 100) % 100); // = 45
    - Buffer overflow prevention
    - String buffer sizing
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#### 2.3.5 Menyimpan Data ke SD Card
 ```cpp
     customSerial.println("Saving data from ID-" + String(entry.id) + "...");
     appendFile(SD, "/log_receiver.txt", dataLogJson);
 ```
+```customSerial.println("Saving data from ID-" + String(entry.id) + "...");``` secara sintaksis ini berarti kita menggabungkan string dengan ID dari data sensor yang sedang disimpan. Fungsi `String()` digunakan untuk mengonversi ID ke dalam format string agar bisa digabungkan dengan string lainnya.
 
+```appendFile(SD, "/log_receiver.txt", dataLogJson);``` adalah fungsi yang digunakan untuk menyimpan data ke dalam file log di SD card. Fungsi ini akan membuka file `/log_receiver.txt` dan menambahkan data JSON yang telah diformat sebelumnya ke dalam file tersebut. 
+
+## 3. Fungsi Setup
 ```cpp
-
 void setup() {
   //initialize customSerial Monitor
   // customSerial.begin(9600);
@@ -537,7 +526,249 @@ void setup() {
   if(mode == 0)
     setData();
 }
+```
 
+```cpp
+void setup() {}
+```
+
+```cpp
+  customSerial.begin(9600, SERIAL_8N1, 0, 1);
+```
+
+```cpp
+  pinMode(SW1, INPUT);
+  pinMode(SW2, INPUT);
+  pinMode(SELECT_BUTTON, INPUT);
+```
+
+```cpp
+  //initialize OLED
+  Wire.begin(OLED_SDA, OLED_SCL);
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) { // Address 0x3C for 128x32
+    customSerial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+```
+
+```cpp
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setTextSize(1);
+  display.setCursor(0,0);
+```
+
+```cpp
+  //SPI LoRa pins
+  LoRa.setSPI(LoraSpi);
+  LoraSpi.begin(SCK, MISO, MOSI, SS);
+  //setup LoRa transceiver module
+  LoRa.setPins(SS, RST, DIO0);
+```
+
+```cpp  
+  if (!LoRa.begin(BAND)) {
+    restartDevice("Starting LoRa Failed", 5);
+    while (1);
+  }
+```
+
+```cpp
+  // initialize SD Card
+  pinMode(SD_CS, OUTPUT);
+  digitalWrite(SD_CS, HIGH);
+```
+
+```cpp
+  // setup SDCard SPI
+  SPI.begin(SD_SCK , SD_MISO, SD_MOSI);
+  SPI.setClockDivider(SPI_CLOCK_DIV2); // Set the SPI clock speed
+  delay(100);
+```
+
+```cpp
+  bool bypass = !digitalRead(SELECT_BUTTON);
+  if(!bypass){
+    customSerial.println("Reading SDCard ...");
+    if (!SD.begin(SD_CS)) {
+      restartDevice("Card Mount Failed!\n\n  Hold select button \n    to run system \n   without SDCard", 5);
+      customSerial.println("Card Mount Failed");
+    }
+    else {
+      customSerial.println("Card Mounted!!");
+      uint8_t cardType = SD.cardType();
+      if (cardType == CARD_NONE) {
+        customSerial.println("No SD card attached");
+      } else {
+        customSerial.print("SD Card Type: ");
+        if (cardType == CARD_MMC) {
+          customSerial.println("MMC");
+        } else if (cardType == CARD_SD) {
+          customSerial.println("SDSC");
+        } else if (cardType == CARD_SDHC) {
+          customSerial.println("SDHC");
+        } else {
+          customSerial.println("UNKNOWN");
+        }
+        File configFile = SD.open("/config.ini", FILE_READ);
+        if (!configFile) {
+          customSerial.println("Failed to open config file");
+          return;
+        }
+      
+        int idNumber = 0;
+      
+        // Read each line from the file
+        while (configFile.available()) {
+          String configLine = configFile.readStringUntil('\n');
+      
+          // Extract values from each line
+          if (configLine.startsWith("ID:")) {
+            DEV_ID = configLine.substring(configLine.indexOf(':') + 1, configLine.indexOf(';')).toInt();
+          } else if (configLine.startsWith("SSID:")) {
+            configLine.substring(configLine.indexOf(':') + 2, configLine.length() - 3).toCharArray(ssid, sizeof(ssid));
+          } else if (configLine.startsWith("PASS:")) {
+            configLine.substring(configLine.indexOf(':') + 2, configLine.length() - 3).toCharArray(password, sizeof(password));
+          }
+        }
+      
+        configFile.close();
+      
+        customSerial.println("Read configuration from config.ini:");
+        customSerial.print("ID: ");
+        customSerial.println(DEV_ID);
+        customSerial.print("SSID: ");
+        customSerial.println(ssid);
+        customSerial.print("Password: ");
+        customSerial.println(password);
+      }
+    }
+  }
+```
+
+```cpp
+  else {    
+    display.clearDisplay();
+    display.setCursor(0, 10);
+    display.print("Skip Reading SDCard..");
+    display.display();
+    customSerial.println("Reading SDCard skipped");
+  }
+  ```
+
+```cpp
+  display.clearDisplay();
+  display.setCursor(0,0);
+  ```
+
+```cpp
+  node.begin(slaveID, customSerial);
+  if(digitalRead(SW1)){
+    mode = 0;
+    customSerial.println("MODE TRANSMITTER");
+    display.print("ID-" + String(DEV_ID));
+    display.setCursor(60,0);
+    display.println("TRANSMITTER");
+    display.display();
+  }
+```
+
+```cpp
+  else if(digitalRead(SW2)){
+    mode = 1;
+    customSerial.print("Connecting to WiFi");
+    display.println("Connecting to WiFi..");
+    display.println();
+    display.println("SSID:" + String(ssid));
+    display.println("Pass:" + String(password)); 
+    display.display();
+    
+    // Connect to Wi-Fi
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      customSerial.print(".");
+      delay(1000);
+    }
+
+    customSerial.println("WiFi Connected");
+    
+    //connecting to a mqtt broker
+    client.setClient(wifiClient);
+    client.setServer(mqtt_server, mqtt_port);
+
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    LocalTime();
+  
+    customSerial.println("MODE RECEIVER/WIFI");
+
+    display.clearDisplay();
+    display.setCursor(0,5);
+    display.println("  MODE RECEIVER/WIFI");
+    display.display();
+  }
+```
+
+```cpp
+  else{
+    mode = 2;
+    
+    customSerial.print("Connecting to LAN");
+    display.println("Connecting to LAN..");
+    display.display();
+    
+    Ethernet.init(W5500_CS);
+
+    if (Ethernet.begin(mac)) { // Dynamic IP setup
+      customSerial.println("DHCP OK!");
+    } else {
+      customSerial.println("Failed to configure Ethernet using DHCP");
+      // Check for Ethernet hardware present
+      if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+        customSerial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+        while (true) {
+          delay(500); // do nothing, no point running without Ethernet hardware
+          ESP.restart();
+        }
+      }
+      if (Ethernet.linkStatus() == LinkOFF) {
+        customSerial.println("Ethernet cable is not connected.");
+      }
+    }
+    digitalWrite(W5500_CS, HIGH);
+    
+    //connecting to a mqtt broker
+    client = PubSubClient(ethClient);
+    client.setServer(mqtt_server, mqtt_port);
+    while (!client.connected()) {
+      customSerial.printf("The client %s connects to the public mqtt broker\n", client_id);
+      if (client.connect("RECEIVER", mqtt_username, mqtt_password)) {
+        customSerial.println("MQTT broker connected");
+      } else {
+        customSerial.print("failed with state ");
+        customSerial.print(client.state());
+        delay(2000);
+      }
+    }
+
+    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    LocalTime();
+  
+    customSerial.println("MODE RECEIVER/LAN");
+
+    display.clearDisplay();
+    display.setCursor(0,5);
+    display.println("   MODE RECEIVER/LAN");
+    display.display();
+  }
+```
+
+```cpp
+  if(mode == 0)
+    setData();
+```
+
+## 4. Fungsi Loop
+```cpp
 void loop() {
   currentMillis = millis();
   
