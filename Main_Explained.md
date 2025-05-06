@@ -1,11 +1,12 @@
 # Main
+## 1. Liabraries
 ```cpp
 #include "Header.h"
 #include "TransmitterMode.h"
 #include "ReceiverMode.h"
 ```
 
-## 1. Fungsi SaveLog
+## 2. Fungsi SaveLog
 ```cpp
 void saveLog() {
   for (const SensorData &entry : node_data) {
@@ -41,10 +42,13 @@ void saveLog() {
   }
 }
 ```
-### 1.1 
+### 2.1 Fungsi SaveLog
+Fungsi ini digunakan untuk menyimpan data sensor ke dalam file log di SD card. Fungsi ini akan melakukan iterasi pada setiap entri data sensor yang ada di dalam vector `node_data`, kemudian mengonversi data tersebut menjadi format JSON dan menyimpannya ke dalam file log.
 ```cpp
 void saveLog() {}
 ```
+
+### 2.2 Iterasi Data Sensor
 ```cpp
   for (const SensorData &entry : node_data) {
     LocalTime();
@@ -52,6 +56,71 @@ void saveLog() {}
     //.....
   }
 ```
+For loop digunakan untuk melakukan iterasi pada `vector node_data` yang berisi kumpulan data sensor. Sintaks yang digunakan adalah range-based for loop di C++, dengan format:
+
+```cpp
+for (const SensorData &entry : node_data)
+```
+
+Dimana:
+- `const SensorData &entry`: Mendefinisikan variabel referensi konstan bernama `entry` bertipe `SensorData`
+- `node_data`: Container/vector yang akan diiterasi
+- Setiap iterasi, `entry` akan mereferensikan elemen berikutnya dalam `node_data`
+
+Menggunakan referensi (`&`) membantu menghindari penyalinan data yang tidak perlu, meningkatkan efisiensi program.
+
+`LocalTime();` digunakan untuk mendapatkan waktu lokal saat ini. Fungsi ini akan mengupdate variabel `TimeNow` yang berisi waktu saat ini.
+
+`char tmp[10];` mendeklarasikan array karakter `tmp` untuk menyimpan string yang akan digunakan untuk menyimpan nilai suhu. Kenapa hanya variabel `tmp` yang dideklarasikan? Karena hanya variabel ini yang akan digunakan untuk menyimpan string sementara, sedangkan variabel lainnya sudah dideklarasikan sebelumnya di bagian awal program yaitu di bagian `Header.h` yakni `dataLogJson` dan `dataSendJson`.
+`10` adalah panjang maksimum string yang akan disimpan dalam `tmp`. Panjang ini harus cukup untuk menampung nilai suhu yang akan disimpan. Kenapa `10`? Karena suhu maksimum yang mungkin terjadi adalah **100 derajat** celcius, dan kita perlu menambahkan karakter `-` untuk suhu negatif. Jadi panjang maksimum yang dibutuhkan adalah 10 karakter. 
+
+#### 2.2.1 Loop Iteration
+For loop adalah struktur kontrol yang memungkinkan kode dijalankan berulang kali dengan jumlah iterasi tertentu. Beberapa format penulisan for loop:
+
+1. Format Tradisional:
+```cpp
+for (inisialisasi; kondisi; increment) {
+  // kode yang diulang
+}
+```
+
+2. Range-based Format (C++11):
+```cpp
+for (deklarasi : range) {
+  // kode yang diulang
+}
+```
+
+3. Format Infinite Loop:
+```cpp
+for (;;) {
+  // loop tanpa henti
+}
+```
+
+Bagian-bagian for loop:
+- Inisialisasi: Menentukan nilai awal counter
+- Kondisi: Menentukan kapan loop berhenti
+- Increment: Mengubah nilai counter setiap iterasi
+
+#### 2.2.2 Karakter
+Karakter adalah unit terkecil dari teks, seperti huruf, angka, atau simbol. Dalam konteks ini, `char tmp[10]` artinya:
+
+Array karakter dengan panjang 10 slot, seperti kotak-kotak berikut:
+```cpp
+[0][1][2][3][4][5][6][7][8][9]
+```
+
+Contoh pengisian untuk suhu -15.5°C:
+```cpp
+['-'][1][5][.][5]['\0'][ ][ ][ ][ ]
+```
+
+- Setiap kotak bisa diisi 1 karakter
+- Karakter `\0` menandai akhir string
+- 10 slot cukup untuk menyimpan nilai suhu (termasuk tanda minus dan desimal)
+
+### 2.3 Format String
 ```cpp
     if (entry.temp < 0)
       sprintf(tmp, "-%d", (int)entry.temp);
@@ -78,6 +147,142 @@ void saveLog() {}
             entry.atmp,
             (int)entry.rain, abs((int)(entry.rain * 100) % 100));
 ```
+
+### 2.3.1 Format Suhu
+```cpp
+if (entry.temp < 0)
+  sprintf(tmp, "-%d", (int)entry.temp);
+else
+  sprintf(tmp, "%d", (int)entry.temp);
+```
+Kode ini menangani formatting nilai suhu:
+- Mengecek apakah suhu negatif
+- Menggunakan `sprintf()` untuk memformat suhu ke string
+- Menyimpan hasilnya ke array `tmp`
+- entry.temp adalah nilai suhu yang diambil dari data sensor
+- `(int)entry.temp` mengonversi suhu ke integer (menghilangkan desimal), kenapa? Karena kita hanya ingin menampilkan bagian bulat dari suhu, dan kita akan menangani desimal di bagian lain yaitu di bagian `sprintf(dataLogJson, ...)`
+- `sprintf(tmp, "-%d", (int)entry.temp);` menyimpan suhu negatif ke dalam `tmp` dengan format `-XX` (misal -15)
+
+#### 2.3.1.1 Sintaksis If-Else
+If-else adalah struktur kontrol yang memungkinkan program mengeksekusi kode berbeda berdasarkan kondisi:
+
+```cpp
+if (kondisi) {
+  // kode jika kondisi true
+} else {
+  // kode jika kondisi false
+}
+```
+
+Contoh logika:
+1. Single If:
+```cpp
+if (x > 0) {
+  // eksekusi jika x positif
+}
+```
+
+2. If-Else:
+```cpp
+if (x > 0) {
+  // eksekusi jika x positif
+} else {
+  // eksekusi jika x tidak positif
+}
+```
+
+3. If-Else If:
+```cpp
+if (x > 0) {
+  // eksekusi jika x positif
+} else if (x < 0) {
+  // eksekusi jika x negatif
+} else {
+  // eksekusi jika x nol
+}
+```
+
+Catatan:
+- Kondisi harus bernilai boolean (true/false)
+- Kurung kurawal opsional untuk blok kode tunggal
+- Dapat menggunakan operator logika (&&, ||, !)
+
+### 2.3.2 Format JSON
+```cpp
+sprintf(dataLogJson, "{\"ID\": %d, ...}", ...);
+```
+Fungsi `sprintf()` memformat data ke string JSON dengan:
+- Format specifiers:
+  - `%d` - integer (ID, Iradian, AtmosphericPressure)
+  - `%s` - string (Timestamp)
+  - `%d.%02d` - desimal 2 digit (WindSpeed, WindDirection, Temperature, RelativeHumidity, Rainfall)
+
+### 2.3.3 Konversi Data
+Untuk data desimal:
+```cpp
+(int)entry.wspeed               // Bagian integer
+abs((int)(entry.wspeed * 100) % 100)  // 2 digit desimal
+```
+- Menggunakan type casting ke integer
+- Perkalian 100 untuk mengambil 2 digit desimal
+- Modulo 100 untuk membatasi 2 digit
+- `abs()` untuk nilai absolut
+
+### 2.3.4 Matrikulasi yang Diperlukan
+
+1. Dasar Pemrograman C++:
+   - Type casting
+   - Pointer dan array
+   - Fungsi dan parameter
+   - Operator aritmatika
+
+2. Format String & sprintf:
+   - Format specifiers (%d, %s, dll)
+   - Buffer management
+   - String formatting
+
+3. Floating Point:
+   - Representasi floating point
+   - Konversi float ke integer
+   - Presisi desimal
+
+4. JSON:
+   - Format dan struktur JSON
+   - Escape characters
+   - JSON objects dan arrays
+
+5. Matematika:
+   - Modulo operation
+   - Nilai absolut
+   - Konversi desimal
+
+6. Contoh Kalkulasi:
+```cpp
+float nilai = 23.456;
+int integer = (int)nilai;            // = 23
+int desimal = abs((int)(nilai * 100) % 100); // = 45
+```
+
+7. Memory Management:
+   - Stack vs Heap
+   - Buffer overflow prevention
+   - String buffer sizing
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ```cpp
     customSerial.println("Saving data from ID-" + String(entry.id) + "...");
     appendFile(SD, "/log_receiver.txt", dataLogJson);
