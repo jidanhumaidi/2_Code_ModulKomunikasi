@@ -528,20 +528,33 @@ void setup() {
 }
 ```
 
+### 3.1 Fungsi Setup
 ```cpp
 void setup() {}
 ```
+Fungsi `setup()` adalah fungsi yang dijalankan sekali saat perangkat dinyalakan. Fungsi ini digunakan untuk menginisialisasi berbagai komponen dan pengaturan awal sistem.
 
+### 3.2 Inisialisasi Serial Monitor
 ```cpp
+  //initialize customSerial Monitor
+  // customSerial.begin(9600);
   customSerial.begin(9600, SERIAL_8N1, 0, 1);
 ```
+- `customSerial.begin(9600, SERIAL_8N1, 0, 1);` digunakan untuk menginisialisasi komunikasi serial dengan baud rate 9600 bps. 
+- Parameter `SERIAL_8N1` menunjukkan format data 8 bit, 1 stop bit, dan tidak ada parity. 
+- `0` dan `1` adalah pin RX dan TX yang digunakan untuk komunikasi serial.
 
+### 3.3 Inisialisasi Pin
 ```cpp
   pinMode(SW1, INPUT);
   pinMode(SW2, INPUT);
   pinMode(SELECT_BUTTON, INPUT);
 ```
+- `pinMode(SW1, INPUT);` mengatur pin `SW1` sebagai input.
++ `pinMode(SW2, INPUT);` mengatur pin `SW2` sebagai input.
++ `pinMode(SELECT_BUTTON, INPUT);` mengatur pin `SELECT_BUTTON` sebagai input.
 
+###  3.4 Inisialisasi OLED
 ```cpp
   //initialize OLED
   Wire.begin(OLED_SDA, OLED_SCL);
@@ -550,42 +563,66 @@ void setup() {}
     for(;;); // Don't proceed, loop forever
   }
 ```
+- `Wire.begin(OLED_SDA, OLED_SCL);` menginisialisasi komunikasi I2C untuk OLED dengan pin SDA dan SCL yang ditentukan.
+- `display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)` menginisialisasi tampilan OLED dengan alamat I2C `0x3C` dan mode switching capacitor. Jika gagal, program akan mencetak pesan kesalahan dan masuk ke loop tak terbatas.
+- `customSerial.println(F("SSD1306 allocation failed"));` mencetak pesan kesalahan ke serial monitor jika alokasi tampilan gagal.
+- `for(;;);` adalah loop tak terbatas yang menghentikan eksekusi program jika tampilan gagal diinisialisasi. Berguna untuk mencegah program berjalan tanpa tampilan yang berfungsi.
 
+### 3.5 Display Clear
 ```cpp
   display.clearDisplay();
   display.setTextColor(WHITE);
   display.setTextSize(1);
   display.setCursor(0,0);
 ```
+- `display.clearDisplay();` membersihkan tampilan OLED.
+- `display.setTextColor(WHITE);` mengatur warna teks menjadi putih.
+- `display.setTextSize(1);` mengatur ukuran teks menjadi 1.
+- `display.setCursor(0,0);` mengatur posisi kursor tampilan ke koordinat (0,0).
 
+### 3.6 Inisialisasi LoRa
 ```cpp
   //SPI LoRa pins
   LoRa.setSPI(LoraSpi);
   LoraSpi.begin(SCK, MISO, MOSI, SS);
   //setup LoRa transceiver module
   LoRa.setPins(SS, RST, DIO0);
-```
+  ```
+- `LoRa.setSPI(LoraSpi);` mengatur SPI untuk modul LoRa.  
+- `LoraSpi.begin(SCK, MISO, MOSI, SS);` menginisialisasi SPI dengan pin SCK, MISO, MOSI, dan SS yang ditentukan.
+- `LoRa.setPins(SS, RST, DIO0);` mengatur pin untuk modul LoRa, di mana `SS` adalah pin chip select, `RST` adalah pin reset, dan `DIO0` adalah pin interrupt.
 
-```cpp  
+### 3.7 Inisialisasi LoRa Transceiver
+```cpp
   if (!LoRa.begin(BAND)) {
     restartDevice("Starting LoRa Failed", 5);
     while (1);
   }
 ```
+- `if (!LoRa.begin(BAND))` memeriksa apakah modul LoRa berhasil diinisialisasi dengan frekuensi `BAND`. Jika gagal, fungsi `restartDevice()` akan dipanggil untuk merestart perangkat dengan pesan kesalahan "Starting LoRa Failed".
+- `while (1);` adalah loop tak terbatas yang menghentikan eksekusi program jika inisialisasi LoRa gagal. Ini berguna untuk mencegah program berjalan tanpa modul LoRa yang berfungsi. Perulangan while tanpa kondisi yang akan selalu bernilai true sehingga program tidak akan pernah keluar dari loop ini.
 
+### 3.8 Inisialisasi SD Card
 ```cpp
   // initialize SD Card
   pinMode(SD_CS, OUTPUT);
   digitalWrite(SD_CS, HIGH);
 ```
+- `pinMode(SD_CS, OUTPUT);` mengatur pin `SD_CS` sebagai output untuk chip select SD card.
+- `digitalWrite(SD_CS, HIGH);` mengatur pin `SD_CS` ke HIGH untuk memastikan SD card tidak aktif saat inisialisasi.
 
+### 3.9 Setup SD Card SPI
 ```cpp
   // setup SDCard SPI
   SPI.begin(SD_SCK , SD_MISO, SD_MOSI);
   SPI.setClockDivider(SPI_CLOCK_DIV2); // Set the SPI clock speed
   delay(100);
 ```
+- `SPI.begin(SD_SCK , SD_MISO, SD_MOSI);` menginisialisasi SPI untuk SD card dengan pin SCK, MISO, dan MOSI yang ditentukan.
+- `SPI.setClockDivider(SPI_CLOCK_DIV2);` mengatur kecepatan clock SPI menjadi setengah dari kecepatan maksimum. Yaitu `SPI_CLOCK_DIV2` yang bernilai 2, sehingga kecepatan clock SPI adalah `F_CPU / 2` sama dengan `8 MHz` pada ESP32. Digunakan agar komunikasi SPI lebih stabil dan tidak terjadi kesalahan saat membaca atau menulis data ke SD card. `16MHz` bisa lebih cepat, tapi kadang-kadang bisa menyebabkan kesalahan saat membaca atau menulis data ke SD card. Jadi lebih baik menggunakan kecepatan yang lebih rendah untuk memastikan komunikasi SPI yang stabil. 
+- `delay(100);` memberikan jeda selama 100 ms untuk memastikan SPI siap sebelum melanjutkan.
 
+### 3.10 Bypass SD Card
 ```cpp
   bool bypass = !digitalRead(SELECT_BUTTON);
   if(!bypass){
@@ -594,6 +631,17 @@ void setup() {}
       restartDevice("Card Mount Failed!\n\n  Hold select button \n    to run system \n   without SDCard", 5);
       customSerial.println("Card Mount Failed");
     }
+  }
+```
+- `bool bypass = !digitalRead(SELECT_BUTTON);` membaca status tombol `SELECT_BUTTON`. Jika tombol ditekan (LOW), maka `bypass` akan bernilai true.
+- `if(!bypass){` memeriksa apakah bypass tidak aktif (tombol tidak ditekan). Jika bypass aktif, maka program akan melewati pembacaan SD card.
+- `customSerial.println("Reading SDCard ...");` mencetak pesan ke serial monitor bahwa pembacaan SD card sedang dilakukan.
+- `if (!SD.begin(SD_CS))` memeriksa apakah SD card berhasil diinisialisasi. Jika gagal, fungsi `restartDevice()` akan dipanggil untuk merestart perangkat dengan pesan kesalahan "Card Mount Failed".
+- `restartDevice("Card Mount Failed!\n\n  Hold select button \n    to run system \n   without SDCard", 5);` adalah fungsi yang digunakan untuk merestart perangkat dengan pesan kesalahan. Pesan ini akan ditampilkan di serial monitor dan di layar OLED. Fungsi ini juga akan menunggu selama 5 detik sebelum merestart perangkat. Pesan ini memberikan instruksi kepada pengguna untuk menekan tombol select untuk menjalankan sistem tanpa SD card.
+- `customSerial.println("Card Mount Failed");` mencetak pesan kesalahan ke serial monitor jika pembacaan SD card gagal.
+
+### 3.11 Pembacaan SD Card
+```cpp
     else {
       customSerial.println("Card Mounted!!");
       uint8_t cardType = SD.cardType();
@@ -610,30 +658,95 @@ void setup() {}
         } else {
           customSerial.println("UNKNOWN");
         }
+```
+- `else {` jika pembacaan SD card berhasil, maka program akan melanjutkan ke bagian ini.
+- `customSerial.println("Card Mounted!!");` mencetak pesan bahwa SD card berhasil dipasang. 
+- `uint8_t cardType = SD.cardType();` mendapatkan tipe SD card yang terpasang.
+- `if (cardType == CARD_NONE)` memeriksa apakah tidak ada SD card yang terpasang. Jika tidak ada, maka program akan mencetak pesan kesalahan.
+- `customSerial.print("SD Card Type: ");` mencetak tipe SD card yang terpasang.
+- `if (cardType == CARD_MMC)` memeriksa apakah tipe SD card adalah MMC. Jika ya, maka program akan mencetak "MMC".
+- `else if (cardType == CARD_SD)` memeriksa apakah tipe SD card adalah SDSC. Jika ya, maka program akan mencetak "SDSC".
+- `else if (cardType == CARD_SDHC)` memeriksa apakah tipe SD card adalah SDHC. Jika ya, maka program akan mencetak "SDHC".
+- `else` jika tipe SD card tidak dikenali, maka program akan mencetak "UNKNOWN".
+
+### 3.12 Membaca File Konfigurasi
+```cpp
         File configFile = SD.open("/config.ini", FILE_READ);
         if (!configFile) {
           customSerial.println("Failed to open config file");
           return;
         }
-      
+```
+- `File configFile = SD.open("/config.ini", FILE_READ);` membuka file konfigurasi `config.ini` dari SD card untuk dibaca.
+- `if (!configFile)` memeriksa apakah file konfigurasi berhasil dibuka. Jika gagal, maka program akan mencetak pesan kesalahan dan keluar dari fungsi.
+- `customSerial.println("Failed to open config file");` mencetak pesan kesalahan ke serial monitor jika file konfigurasi gagal dibuka.
+- `return;` keluar dari fungsi jika file konfigurasi gagal dibuka.
+
+### 3.12.1 Deklarasi Variabel
+```cpp
         int idNumber = 0;
-      
+```
+- `int idNumber = 0;` mendeklarasikan variabel `idNumber` untuk menyimpan ID dari data yang dibaca dari file konfigurasi yaitu file `config.ini`. Variabel ini diinisialisasi dengan nilai 0.
+
+### 3.13 Membaca Setiap Baris dari File
+```cpp
         // Read each line from the file
         while (configFile.available()) {
           String configLine = configFile.readStringUntil('\n');
-      
+```
+- `while (configFile.available())` memeriksa apakah masih ada data yang tersedia untuk dibaca dari file konfigurasi.
+- `String configLine = configFile.readStringUntil('\n');` membaca setiap baris dari file konfigurasi hingga karakter newline (`\n`) dan menyimpannya ke dalam variabel `configLine`. Variabel ini bertipe `String` yang merupakan tipe data string di Arduino.
+- `configLine` akan berisi satu baris dari file konfigurasi setiap kali loop dijalankan.
+- `configFile.readStringUntil('\n')` adalah fungsi yang membaca data dari file hingga karakter newline dan mengembalikan hasilnya sebagai string.
+- Fungsi ini akan terus membaca hingga tidak ada lagi data yang tersedia di file.
+- `configFile.available()` memeriksa apakah masih ada data yang tersedia untuk dibaca dari file konfigurasi.
+- Jika ada, maka loop akan terus berjalan dan membaca baris berikutnya.
+- Jika tidak ada data yang tersedia, maka loop akan berhenti.
+
+### 3.14 Ekstraksi Nilai dari Setiap Baris
+```cpp
           // Extract values from each line
           if (configLine.startsWith("ID:")) {
             DEV_ID = configLine.substring(configLine.indexOf(':') + 1, configLine.indexOf(';')).toInt();
-          } else if (configLine.startsWith("SSID:")) {
+          } 
+```
+- `if (configLine.startsWith("ID:"))` memeriksa apakah baris dimulai dengan "ID:". Jika ya, maka program akan mengekstrak ID dari baris tersebut.
+- `DEV_ID = configLine.substring(configLine.indexOf(':') + 1, configLine.indexOf(';')).toInt();` mengekstrak ID dari baris konfigurasi dengan mengambil substring dari karakter setelah ":" hingga karakter ";" dan mengonversinya menjadi integer. Hasilnya disimpan ke dalam variabel `DEV_ID`.
+    - `configLine.startsWith("ID:")` memeriksa apakah baris dimulai dengan "ID:".
+     - `configLine.indexOf(':')` menemukan posisi karakter ":" dalam string.
+    - `:` itulah karakter pemisah antara nama dan nilai. contoh "ID: 1234" maka `configLine.indexOf(':')` akan mengembalikan posisi karakter ":".
+    - `configLine.indexOf(';')` menemukan posisi karakter ";" dalam string. Contoh "ID: 1234;" maka `configLine.indexOf(';')` akan mengembalikan posisi karakter ";". Dikembalikan pada fungsi `substring()` untuk mengekstrak nilai ID. Sehingga hasilnya adalah "1234".
+    - .toInt() mengonversi substring menjadi integer.
+
+```cpp
+else if (configLine.startsWith("SSID:")) {
             configLine.substring(configLine.indexOf(':') + 2, configLine.length() - 3).toCharArray(ssid, sizeof(ssid));
-          } else if (configLine.startsWith("PASS:")) {
+          }
+```
+- `else if (configLine.startsWith("SSID:"))` memeriksa apakah baris dimulai dengan "SSID:". Jika ya, maka program akan mengekstrak SSID dari baris tersebut.
+- `configLine.substring(configLine.indexOf(':') + 2, configLine.length() - 3).toCharArray(ssid, sizeof(ssid));` mengekstrak SSID dari baris konfigurasi dengan mengambil substring dari karakter setelah ":" hingga karakter ";" dan mengonversinya menjadi karakter array. Hasilnya disimpan ke dalam variabel `ssid`.
+    - `configLine.indexOf(':') + 2` untuk mendapatkan posisi karakter setelah ":".
+    - `configLine.length() - 3` untuk mendapatkan panjang string dikurangi 3 karakter terakhir (misalnya "\r\n").
+    - `.toCharArray(ssid, sizeof(ssid));` mengonversi substring menjadi karakter array dan menyimpannya ke dalam variabel `ssid`.
+
+```cpp
+else if (configLine.startsWith("PASS:")) {
             configLine.substring(configLine.indexOf(':') + 2, configLine.length() - 3).toCharArray(password, sizeof(password));
           }
-        }
-      
+```
+- `configLine.substring(configLine.indexOf(':') + 2, configLine.length() - 3).toCharArray(password, sizeof(password));` mengekstrak password dari baris konfigurasi dengan cara yang sama seperti SSID. Hasilnya disimpan ke dalam variabel `password`.
+    - `configLine.indexOf(':') + 2` untuk mendapatkan posisi karakter setelah ":".
+    - `configLine.length() - 3` untuk mendapatkan panjang string dikurangi 3 karakter terakhir (misalnya "\r\n").
+    - `.toCharArray(password, sizeof(password));` mengonversi substring menjadi karakter array dan menyimpannya ke dalam variabel `password`.
+
+### 3.15 Menutup File Konfigurasi
+```cpp
         configFile.close();
-      
+```
+- `configFile.close();` menutup file konfigurasi setelah selesai membacanya. Ini penting untuk membebaskan sumber daya dan memastikan bahwa file tidak tetap terbuka.
+
+### 3.16 Menampilkan Konfigurasi
+```cpp
         customSerial.println("Read configuration from config.ini:");
         customSerial.print("ID: ");
         customSerial.println(DEV_ID);
@@ -645,7 +758,15 @@ void setup() {}
     }
   }
 ```
+- `customSerial.println("Read configuration from config.ini:");` mencetak pesan bahwa konfigurasi telah dibaca dari file `config.ini`.
+- `customSerial.print("ID: ");` mencetak label "ID: " ke serial monitor.
+- `customSerial.println(DEV_ID);` mencetak ID yang telah dibaca dari file konfigurasi.
+- `customSerial.print("SSID: ");` mencetak label "SSID: " ke serial monitor.
+- `customSerial.println(ssid);` mencetak SSID yang telah dibaca dari file konfigurasi.
+- `customSerial.print("Password: ");` mencetak label "Password: " ke serial monitor.
+- `customSerial.println(password);` mencetak password yang telah dibaca dari file konfigurasi.
 
+### 3.17 Menampilkan Pesan Bypass
 ```cpp
   else {    
     display.clearDisplay();
@@ -654,15 +775,33 @@ void setup() {}
     display.display();
     customSerial.println("Reading SDCard skipped");
   }
-  ```
+ ```
+- `else {` jika bypass aktif (tombol ditekan), maka program akan melanjutkan ke bagian ini.
+- `display.clearDisplay();` membersihkan tampilan OLED.
+- `display.setCursor(0, 10);` mengatur posisi kursor tampilan ke koordinat (0,10).
+- `display.print("Skip Reading SDCard..");` menampilkan pesan "Skip Reading SDCard.." di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
+- `customSerial.println("Reading SDCard skipped");` mencetak pesan bahwa pembacaan SD card telah dilewati ke serial monitor.
 
+### 3.18 Menampilkan Pesan Awal
 ```cpp
   display.clearDisplay();
   display.setCursor(0,0);
-  ```
+```
+- `display.clearDisplay();` membersihkan tampilan OLED.
+- `display.setCursor(0,0);` mengatur posisi kursor tampilan ke koordinat (0,0).
 
+### 3.19 Inisialisasi Node
 ```cpp
   node.begin(slaveID, customSerial);
+  ```
+- `node.begin(slaveID, customSerial);` menginisialisasi node dengan ID `slaveID` dan objek `customSerial` untuk komunikasi serial.
+   - `node` adalah objek dari kelas `Node` yang digunakan untuk berkomunikasi dengan perangkat lain melalui protokol tertentu.
+   - `slaveID` adalah ID dari node yang digunakan untuk mengidentifikasi perangkat ini dalam jaringan.
+   - `customSerial` adalah objek yang digunakan untuk komunikasi serial dengan perangkat lain.
+
+### 3.20 Memilih Mode
+```cpp
   if(digitalRead(SW1)){
     mode = 0;
     customSerial.println("MODE TRANSMITTER");
@@ -672,7 +811,17 @@ void setup() {}
     display.display();
   }
 ```
+- `if(digitalRead(SW1)){` memeriksa apakah tombol `SW1` ditekan. Jika ya, maka mode diatur ke 0 (TRANSMITTER).
+- `mode = 0;` mengatur mode ke 0, yang berarti perangkat akan berfungsi sebagai transmitter.
+- `customSerial.println("MODE TRANSMITTER");` mencetak pesan bahwa mode yang dipilih adalah TRANSMITTER ke serial monitor.
+- `display.print("ID-" + String(DEV_ID));` menampilkan ID perangkat di layar OLED.
+- `display.setCursor(60,0);` mengatur posisi kursor tampilan ke koordinat (60,0).
+- `display.println("TRANSMITTER");` menampilkan teks "TRANSMITTER" di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
+- `mode = 0;` mengatur mode ke 0, yang berarti perangkat akan berfungsi sebagai transmitter.
+- `customSerial.println("MODE TRANSMITTER");` mencetak pesan bahwa mode yang dipilih adalah TRANSMITTER ke serial monitor.
 
+### 3.21 Memilih Mode WiFi
 ```cpp
   else if(digitalRead(SW2)){
     mode = 1;
@@ -682,7 +831,17 @@ void setup() {}
     display.println("SSID:" + String(ssid));
     display.println("Pass:" + String(password)); 
     display.display();
-    
+```
+- `else if(digitalRead(SW2)){` memeriksa apakah tombol `SW2` ditekan. Jika ya, maka mode diatur ke 1 (RECEIVER/WIFI).
+- `mode = 1;` mengatur mode ke 1, yang berarti perangkat akan berfungsi sebagai receiver dengan koneksi WiFi.
+- `customSerial.print("Connecting to WiFi");` mencetak pesan bahwa perangkat sedang mencoba terhubung ke WiFi ke serial monitor.
+- `display.println("Connecting to WiFi..");` menampilkan pesan "Connecting to WiFi.." di layar OLED.  
+- `display.println();` menampilkan baris kosong di layar OLED.
+- `display.println("SSID:" + String(ssid));` menampilkan SSID yang digunakan untuk koneksi WiFi di layar OLED.
+- `display.println("Pass:" + String(password));` menampilkan password yang digunakan untuk koneksi WiFi di layar OLED.
+
+### 3.22 Koneksi WiFi
+```cpp
     // Connect to Wi-Fi
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
@@ -707,7 +866,22 @@ void setup() {}
     display.display();
   }
 ```
+- `WiFi.begin(ssid, password);` memulai koneksi WiFi dengan SSID dan password yang telah dibaca dari file konfigurasi.
+- `while (WiFi.status() != WL_CONNECTED) {` memeriksa status koneksi WiFi. Jika status tidak terhubung, maka program akan mencetak "." ke serial monitor setiap detik hingga terhubung.
+- `customSerial.print(".");` mencetak "." ke serial monitor setiap detik selama proses koneksi.
+- `delay(1000);` memberikan jeda selama 1 detik sebelum memeriksa status koneksi lagi.
+- `customSerial.println("WiFi Connected");` mencetak pesan bahwa koneksi WiFi berhasil ke serial monitor.
+- `client.setClient(wifiClient);` mengatur objek `client` untuk menggunakan koneksi WiFi.
+- `client.setServer(mqtt_server, mqtt_port);` mengatur server MQTT yang akan digunakan untuk koneksi.
+- `configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);` mengonfigurasi waktu dengan offset GMT dan daylight saving time menggunakan server NTP yang telah ditentukan.
+- `LocalTime();` memanggil fungsi `LocalTime()` untuk mendapatkan waktu lokal.
+- `customSerial.println("MODE RECEIVER/WIFI");` mencetak pesan bahwa mode yang dipilih adalah RECEIVER/WIFI ke serial monitor.
+- `display.clearDisplay();` membersihkan tampilan OLED.
+- `display.setCursor(0,5);` mengatur posisi kursor tampilan ke koordinat (0,5).
+- `display.println("  MODE RECEIVER/WIFI");` menampilkan teks "MODE RECEIVER/WIFI" di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
 
+### 3.23 Memilih Mode LAN
 ```cpp
   else{
     mode = 2;
@@ -715,7 +889,15 @@ void setup() {}
     customSerial.print("Connecting to LAN");
     display.println("Connecting to LAN..");
     display.display();
-    
+```
+- `else{` jika tombol `SW2` tidak ditekan, maka mode diatur ke 2 (RECEIVER/LAN).
+- `mode = 2;` mengatur mode ke 2, yang berarti perangkat akan berfungsi sebagai receiver dengan koneksi LAN.
+- `customSerial.print("Connecting to LAN");` mencetak pesan bahwa perangkat sedang mencoba terhubung ke LAN ke serial monitor.
+- `display.println("Connecting to LAN..");` menampilkan pesan "Connecting to LAN.." di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
+
+### 3.24 Koneksi LAN
+```cpp
     Ethernet.init(W5500_CS);
 
     if (Ethernet.begin(mac)) { // Dynamic IP setup
@@ -761,11 +943,45 @@ void setup() {}
     display.display();
   }
 ```
+- `Ethernet.init(W5500_CS);` menginisialisasi Ethernet dengan pin chip select `W5500_CS`.
+- `if (Ethernet.begin(mac))` memulai koneksi Ethernet dengan alamat MAC yang telah ditentukan. Jika berhasil, maka program akan mencetak pesan bahwa DHCP berhasil.
+- `customSerial.println("DHCP OK!");` mencetak pesan bahwa DHCP berhasil ke serial monitor.
+- `else {` jika koneksi Ethernet gagal, maka program akan melanjutkan ke bagian ini.
+- `customSerial.println("Failed to configure Ethernet using DHCP");` mencetak pesan kesalahan bahwa konfigurasi Ethernet menggunakan DHCP gagal.
+- `if (Ethernet.hardwareStatus() == EthernetNoHardware) {` memeriksa apakah perangkat keras Ethernet tidak ditemukan. Jika ya, maka program akan mencetak pesan kesalahan dan masuk ke loop tak terbatas.
+- `customSerial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");` mencetak pesan kesalahan bahwa perangkat keras Ethernet tidak ditemukan.
+- `while (true) {` adalah loop tak terbatas yang menghentikan eksekusi program jika perangkat keras Ethernet tidak ditemukan. Ini berguna untuk mencegah program berjalan tanpa perangkat keras Ethernet yang berfungsi.
+- `delay(500);` memberikan jeda selama 500 ms sebelum memeriksa status perangkat keras Ethernet lagi.
+- `ESP.restart();` merestart perangkat jika perangkat keras Ethernet tidak ditemukan.
+- `if (Ethernet.linkStatus() == LinkOFF) {` memeriksa apakah kabel Ethernet tidak terhubung. Jika ya, maka program akan mencetak pesan kesalahan.
+- `customSerial.println("Ethernet cable is not connected.");` mencetak pesan kesalahan bahwa kabel Ethernet tidak terhubung.
+- `digitalWrite(W5500_CS, HIGH);` mengatur pin chip select `W5500_CS` ke HIGH untuk memastikan Ethernet tidak aktif saat inisialisasi.
+- `client = PubSubClient(ethClient);` menginisialisasi objek `client` untuk menggunakan koneksi Ethernet.
+- `client.setServer(mqtt_server, mqtt_port);` mengatur server MQTT yang akan digunakan untuk koneksi.
+- `while (!client.connected()) {` memeriksa apakah koneksi ke broker MQTT berhasil. Jika tidak, maka program akan mencetak pesan bahwa klien sedang mencoba terhubung ke broker MQTT.
+- `customSerial.printf("The client %s connects to the public mqtt broker\n", client_id);` mencetak pesan bahwa klien sedang mencoba terhubung ke broker MQTT dengan ID klien yang telah ditentukan.
+- `if (client.connect("RECEIVER", mqtt_username, mqtt_password)) {` mencoba untuk terhubung ke broker MQTT dengan username dan password yang telah ditentukan. Jika berhasil, maka program akan mencetak pesan bahwa koneksi berhasil.
+- `customSerial.println("MQTT broker connected");` mencetak pesan bahwa koneksi ke broker MQTT berhasil.
+- `else {` jika koneksi ke broker MQTT gagal, maka program akan melanjutkan ke bagian ini.
+- `customSerial.print("failed with state ");` mencetak pesan bahwa koneksi ke broker MQTT gagal.
+- `customSerial.print(client.state());` mencetak status kesalahan koneksi ke broker MQTT.
+- `delay(2000);` memberikan jeda selama 2 detik sebelum mencoba terhubung lagi.
+- `configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);` mengonfigurasi waktu dengan offset GMT dan daylight saving time menggunakan server NTP yang telah ditentukan.
+- `LocalTime();` memanggil fungsi `LocalTime()` untuk mendapatkan waktu lokal.
+- `customSerial.println("MODE RECEIVER/LAN");` mencetak pesan bahwa mode yang dipilih adalah RECEIVER/LAN ke serial monitor.
+- `display.clearDisplay();` membersihkan tampilan OLED.
+- `display.setCursor(0,5);` mengatur posisi kursor tampilan ke koordinat (0,5).
+- `display.println("   MODE RECEIVER/LAN");` menampilkan teks "MODE RECEIVER/LAN" di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
 
+### 3.24 Mode Trasmitter
 ```cpp
   if(mode == 0)
     setData();
 ```
+- `if(mode == 0)` memeriksa apakah mode adalah TRANSMITTER. Jika ya, maka fungsi `setData()` akan dipanggil untuk mengatur data yang akan dikirim.
+- `setData();` adalah fungsi yang digunakan untuk mengatur data yang akan dikirim oleh transmitter. Fungsi ini akan mengumpulkan data dari sensor dan mengonversinya menjadi format JSON sebelum mengirimnya melalui modul LoRa.
+- Fungsi ini juga akan menyimpan data yang dikirim ke dalam file log di SD card.
 
 ## 4. Fungsi Loop
 ```cpp
@@ -785,7 +1001,7 @@ void loop() {
       //read packet
       while (LoRa.available()) {
         LoRaData = LoRa.readString();
-      }
+     }
       if (LoRaData.startsWith("ACK#")) {
         customSerial.print("ACK Message Received : ");
         customSerial.println(LoRaData);
