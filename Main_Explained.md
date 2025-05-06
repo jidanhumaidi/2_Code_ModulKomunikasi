@@ -1310,6 +1310,7 @@ while (kondisi) {
 - `customSerial.print("ACK data not found! ");` mencetak pesan bahwa data ACK tidak ditemukan ke serial monitor.
 - `if(waiting == false){` memeriksa apakah status waiting adalah false. Jika ya, maka program akan melanjutkan ke bagian ini.
 - `int generateDelay = random(1000, 15000);` menghasilkan angka acak antara 1 detik hingga 15 detik untuk menunggu sebelum mengirim ulang data.
+   - `random(1000, 15000)` adalah fungsi yang menghasilkan angka acak antara 1000 dan 15000. Ini digunakan untuk menentukan waktu tunggu sebelum mengirim ulang data. Dipilih random karena waktu tunggu yang berbeda-beda untuk menghindari tabrakan saat mengirim data.
 - `randomDelay = currentMillis + generateDelay;` menyimpan waktu tunggu dalam variabel `randomDelay`. Ini digunakan untuk menghitung waktu tunggu sebelum mengirim ulang data.
 - `waiting = true;` mengatur status waiting menjadi true. Ini digunakan untuk menandakan bahwa perangkat sedang menunggu sebelum mengirim ulang data.
 - `customSerial.println("Resend data in " + String(generateDelay) + "s");` mencetak pesan bahwa perangkat akan mengirim ulang data setelah waktu tunggu yang telah ditentukan ke serial monitor.
@@ -1319,6 +1320,7 @@ while (kondisi) {
 - `ack_status` adalah variabel yang menyimpan status ACK. Ini digunakan untuk menandakan apakah ACK telah diterima atau tidak.
 - 
 
+### 4.8 Menunggu Sebelum Mengirim Ulang Data
 ```cpp
     if(ack_status == false){
       if(waiting){
@@ -1344,8 +1346,23 @@ while (kondisi) {
         }
       }
     }
-  }
-  
+```
+- `if(ack_status == false){` memeriksa apakah status ACK adalah false. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `if(waiting){` memeriksa apakah status waiting adalah true. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `display.fillRect(0, 55, 128, 40, SSD1306_BLACK);` menghapus tampilan OLED pada area tertentu untuk memperbarui informasi.
+- `display.setCursor(0, 55);` mengatur posisi kursor tampilan ke koordinat (0,55).
+- `display.println("Waiting " + String(randomDelay-currentMillis) + " ms");` menampilkan pesan bahwa perangkat sedang menunggu sebelum mengirim ulang data. Ini juga menampilkan waktu tunggu yang tersisa dalam milidetik.
+- `appendFile(SD, "/log_transmitter.txt", dataLogJson);` menyimpan data log ke dalam file log di SD card. Ini digunakan untuk menyimpan data yang telah dikirim.
+- `LoRa.beginPacket();` memulai paket LoRa baru untuk mengirim data.
+- `LoRa.print(dataSendJson);` mengirim data yang telah disiapkan dalam format JSON melalui modul LoRa.
+- `LoRa.endPacket();` mengakhiri paket LoRa yang telah dibuat dan mengirimkannya.
+- `customSerial.print(dataLogJson);` mencetak data log yang telah dikirim ke serial monitor.
+- `display.fillRect(0, 50, 128, 40, SSD1306_BLACK);` menghapus tampilan OLED pada area tertentu untuk memperbarui informasi.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.  
+- `waiting = false;` mengatur status waiting menjadi false. Ini digunakan untuk menandakan bahwa perangkat tidak lagi menunggu sebelum mengirim ulang data. 
+
+### 4.9 Mode Receiver/LAN
+```cpp
   if((mode == 1)||(mode == 2)){
     int packetSize = LoRa.parsePacket();
     if (packetSize) {
@@ -1355,6 +1372,17 @@ while (kondisi) {
       while (LoRa.available()) {
         LoRaData = LoRa.readString();
       }
+```
+- `if((mode == 1)||(mode == 2)){` memeriksa apakah mode adalah RECEIVER atau LAN. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `int packetSize = LoRa.parsePacket();` memeriksa apakah ada paket yang diterima melalui modul LoRa. Jika ada, maka ukuran paket akan disimpan dalam variabel `packetSize`.
+- `if (packetSize) {` memeriksa apakah ada paket yang diterima. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `customSerial.print("Received packet ");` mencetak pesan bahwa paket telah diterima ke serial monitor.
+- `while (LoRa.available()) {` memeriksa apakah ada data yang tersedia untuk dibaca dari modul LoRa. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `LoRaData = LoRa.readString();` membaca data yang diterima dari modul LoRa dan menyimpannya ke dalam variabel `LoRaData`. Variabel ini bertipe `String` yang merupakan tipe data string di Arduino.
+- `LoRa.readString()` adalah fungsi yang membaca data dari modul LoRa hingga karakter newline (`\n`) dan mengembalikan hasilnya sebagai string.
+
+### 4.10 Memproses Data LoRa
+```cpp
       customSerial.println(LoRaData);
       DynamicJsonDocument doc(1024);
       DeserializationError error = deserializeJson(doc, LoRaData);
@@ -1381,6 +1409,32 @@ while (kondisi) {
                  "AtmosphericPressure : " + String(received_data.atmp) + "\n" + 
                  "Rainfall : " + String(received_data.rain);
         customSerial.println(result);
+```
+- `customSerial.println(LoRaData);` mencetak data yang diterima dari modul LoRa ke serial monitor.
+- `DynamicJsonDocument doc(1024);` mendeklarasikan objek `doc` yang akan digunakan untuk menyimpan data JSON yang diterima. Ukuran dokumen JSON ditentukan dalam byte (1024 byte).
+- `DeserializationError error = deserializeJson(doc, LoRaData);` mencoba untuk mengonversi data yang diterima menjadi format JSON dan menyimpannya dalam objek `doc`. Jika terjadi kesalahan, maka objek `error` akan menyimpan informasi tentang kesalahan tersebut.
+- `if (error) {` memeriksa apakah terjadi kesalahan saat mengonversi data JSON. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `customSerial.print("ERROR : Invalid Data - ");` mencetak pesan bahwa data yang diterima tidak valid ke serial monitor.
+- `customSerial.println(error.c_str());` mencetak informasi tentang kesalahan yang terjadi saat mengonversi data JSON ke serial monitor.
+- `} else {` jika tidak terjadi kesalahan saat mengonversi data JSON, maka program akan melanjutkan ke bagian ini.
+- `SensorData received_data;` mendeklarasikan objek `received_data` yang akan digunakan untuk menyimpan data sensor yang diterima.
+- `received_data.id = doc["ID"];` menyimpan ID dari data sensor yang diterima ke dalam objek `received_data`.
+- `received_data.iradian = doc["Ir"];` menyimpan data iradian dari data sensor yang diterima ke dalam objek `received_data`.
+- `received_data.wspeed = doc["WS"];` menyimpan data kecepatan angin dari data sensor yang diterima ke dalam objek `received_data`.
+- `received_data.wdirect = doc["WD"];` menyimpan data arah angin dari data sensor yang diterima ke dalam objek `received_data`.
+- `received_data.temp = doc["Temp"];` menyimpan data suhu dari data sensor yang diterima ke dalam objek `received_data`.
+- `received_data.hum = doc["Hum"];` menyimpan data kelembapan dari data sensor yang diterima ke dalam objek `received_data`.
+- `received_data.atmp = doc["AP"];` menyimpan data tekanan atmosfer dari data sensor yang diterima ke dalam objek `received_data`.
+- `received_data.rain = doc["Rain"];` menyimpan data curah hujan dari data sensor yang diterima ke dalam objek `received_data`.
+- `String result = "ID : " + String(received_data.id) + "\n" +` menyimpan hasil pembacaan data sensor dalam format string. Ini digunakan untuk menampilkan data sensor yang diterima ke serial monitor.
+- `String(received_data.id)` mengonversi ID dari objek `received_data` menjadi string.
+- `"\n"` adalah karakter newline yang digunakan untuk memisahkan setiap data sensor dalam hasil pembacaan.
+- `customSerial.println(result);` mencetak hasil pembacaan data sensor ke serial monitor.
+- `result` adalah variabel yang menyimpan hasil pembacaan data sensor dalam format string. Ini digunakan untuk menampilkan data sensor yang diterima ke serial monitor.
+- `received_data` adalah objek yang menyimpan data sensor yang diterima. Ini digunakan untuk menyimpan data sensor yang diterima dari modul LoRa.
+
+### 4.11 Memeriksa Data yang Diterima
+```cpp
         bool is_collected = false;
         // Output the data to the customSerial port
         for (const SensorData& entry : node_data) {
@@ -1401,6 +1455,26 @@ while (kondisi) {
         }
       }
     }
+```
+- `bool is_collected = false;` mendeklarasikan variabel `is_collected` yang akan digunakan untuk menandakan apakah data dari node tertentu sudah diterima sebelumnya.
+- `for (const SensorData& entry : node_data) {` melakukan iterasi pada setiap data sensor yang telah diterima sebelumnya yang disimpan dalam variabel `node_data`. Ini digunakan untuk memeriksa apakah data dari node tertentu sudah diterima sebelumnya.
+- `if(received_data.id == entry.id){` memeriksa apakah ID dari data yang diterima sama dengan ID dari data yang telah diterima sebelumnya. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `is_collected = true;` mengatur status `is_collected` menjadi true. Ini digunakan untuk menandakan bahwa data dari node tertentu sudah diterima sebelumnya.
+- `customSerial.println("Data From This Node is Already Collected");` mencetak pesan bahwa data dari node tertentu sudah diterima sebelumnya ke serial monitor.
+- `customSerial.print("ID: ");` mencetak pesan bahwa ID dari data sensor yang telah diterima ke serial monitor.
+-  `customSerial.println(entry.id);` mencetak ID dari data sensor yang telah diterima ke serial monitor.
+- `display.fillRect(0, 45, 128, 10, SSD1306_BLACK);` menghapus tampilan OLED pada area tertentu untuk memperbarui informasi.
+- `display.setCursor(0, 45);` mengatur posisi kursor tampilan ke koordinat (0,45).
+-  `display.println("Received from " + String(entry.id));` menampilkan pesan bahwa data diterima dari node tertentu di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
+- `if(!is_collected){` memeriksa apakah data dari node tertentu belum diterima sebelumnya. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `node_data.push_back(received_data);` menambahkan data sensor yang diterima ke dalam daftar data sensor yang telah diterima sebelumnya. Ini digunakan untuk menyimpan data sensor yang diterima dari modul LoRa.
+- `node_data` adalah variabel yang menyimpan daftar data sensor yang telah diterima sebelumnya. Ini digunakan untuk menyimpan data sensor yang diterima dari modul LoRa.
+- `received_data` adalah objek yang menyimpan data sensor yang diterima. Ini digunakan untuk menyimpan data sensor yang diterima dari modul LoRa.
+- `entry` adalah variabel yang menyimpan data sensor yang telah diterima sebelumnya. Ini digunakan untuk memeriksa apakah data dari node tertentu sudah diterima sebelumnya.
+
+### 4.12 Mengirim Pesan ACK
+```cpp
     if (currentMillis - previousAckMillisRead >= DELAY_ACK) {
       previousAckMillisRead = currentMillis;
       ack_message = "ACK#";
@@ -1413,7 +1487,20 @@ while (kondisi) {
         display.print(String(entry.id) + ", ");
       }
       display.display();
-      
+```
+- `if (currentMillis - previousAckMillisRead >= DELAY_ACK) {` memeriksa apakah waktu yang telah berlalu sejak pengiriman pesan ACK terakhir lebih dari waktu tunda yang ditentukan. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `previousAckMillisRead = currentMillis;` memperbarui waktu pengiriman pesan ACK terakhir dengan waktu saat ini. Ini digunakan untuk menghitung waktu yang telah berlalu sejak pengiriman pesan ACK terakhir.
+- `ack_message = "ACK#";` menginisialisasi pesan ACK dengan string "ACK#". Ini digunakan untuk menyimpan pesan ACK yang akan dikirim.
+- `display.fillRect(0, 15, 128, 50, SSD1306_BLACK);` menghapus tampilan OLED pada area tertentu untuk memperbarui informasi.
+- `display.setCursor(0, 15);` mengatur posisi kursor tampilan ke koordinat (0,15).
+- `display.print("Received(ID): ");` menampilkan pesan bahwa ID yang diterima akan ditampilkan di layar OLED.
+- `for (const SensorData &entry : node_data)` melakukan iterasi pada setiap data sensor yang telah diterima sebelumnya yang disimpan dalam variabel `node_data`. Ini digunakan untuk menampilkan ID dari data sensor yang diterima di layar OLED.
+- `ack_message += String(entry.id) + "#";` menambahkan ID dari data sensor yang diterima ke dalam pesan ACK. Ini digunakan untuk menyimpan ID dari data sensor yang diterima dalam pesan ACK.
+- `display.print(String(entry.id) + ", ");` menampilkan ID dari data sensor yang diterima di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
+
+### 4.13 Mengirim Pesan ACK
+```cpp
       LoRa.beginPacket();
       LoRa.print(ack_message);
       LoRa.endPacket();
@@ -1434,6 +1521,20 @@ while (kondisi) {
       display.println("ACK Sent");
       display.display();
     }
+```
+- `LoRa.beginPacket();` memulai paket LoRa baru untuk mengirim pesan ACK.
+- `LoRa.print(ack_message);` mengirim pesan ACK yang telah disiapkan melalui modul LoRa.
+- `LoRa.endPacket();` mengakhiri paket LoRa yang telah dibuat dan mengirimkannya.
+- `delay(100);` menunggu selama 100 milidetik sebelum mengirim paket berikutnya. Ini digunakan untuk memberikan jeda antara pengiriman paket.
+- `customSerial.print("Sending ACK message : ");` mencetak pesan bahwa pesan ACK sedang dikirim ke serial monitor.
+- `customSerial.println(ack_message);` mencetak pesan ACK yang sedang dikirim ke serial monitor.
+- `display.fillRect(50, 55, 128, 20, SSD1306_BLACK);` menghapus tampilan OLED pada area tertentu untuk memperbarui informasi.
+- `display.setCursor(50, 55);` mengatur posisi kursor tampilan ke koordinat (50,55).
+- `display.println("ACK Sent");` menampilkan pesan bahwa pesan ACK telah dikirim di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
+
+### 4.14 Mengirim Data dengan MQTT
+```cpp
     if (currentMillis - previousPublishMillisRead >= INTERVAL_MQTT) {
       previousPublishMillisRead = currentMillis;
       // save log to sdcard
@@ -1443,7 +1544,15 @@ while (kondisi) {
       // clear data
       node_data.clear();
     }
-    
+```
+- `if (currentMillis - previousPublishMillisRead >= INTERVAL_MQTT) {` memeriksa apakah waktu yang telah berlalu sejak pengiriman data terakhir lebih dari interval yang ditentukan. Jika ya, maka program akan melanjutkan ke bagian ini.
+- `previousPublishMillisRead = currentMillis;` memperbarui waktu pengiriman data terakhir dengan waktu saat ini. Ini digunakan untuk menghitung waktu yang telah berlalu sejak pengiriman data terakhir. 
+- `saveLog();` menyimpan data log ke dalam file log di SD card. Ini digunakan untuk menyimpan data yang telah dikirim.
+- `sendData();` mengirim data yang telah disiapkan melalui protokol MQTT. Ini digunakan untuk mengirim data ke server MQTT. 
+- `node_data.clear();` menghapus semua data sensor yang telah diterima sebelumnya dari daftar. Ini digunakan untuk mempersiapkan pengiriman data baru. 
+
+### 4.15 Menampilkan Waktu Tunggu
+```cpp
     int remaining_s = ((INTERVAL_MQTT - (currentMillis - previousPublishMillisRead))/1000);
     int remaining_m = remaining_s/60;
     remaining_s = remaining_s - (remaining_m*60);
@@ -1453,6 +1562,14 @@ while (kondisi) {
     display.setCursor(55, 55);
     display.println("ACK in " + String((DELAY_ACK - (currentMillis - previousAckMillisRead))/1000) + "s");
     display.display();
-    
-  }
-}
+```
+- `int remaining_s = ((INTERVAL_MQTT - (currentMillis - previousPublishMillisRead))/1000);` menghitung waktu yang tersisa sebelum pengiriman data berikutnya dalam detik.
+- `int remaining_m = remaining_s/60;` menghitung waktu yang tersisa dalam menit. 
+- `remaining_s = remaining_s - (remaining_m*60);` menghitung sisa detik setelah menghitung menit.
+- `display.fillRect(0, 55, 128, 20, SSD1306_BLACK);` menghapus tampilan OLED pada area tertentu untuk memperbarui informasi.
+- `display.setCursor(0, 55);` mengatur posisi kursor tampilan ke koordinat (0,55).
+- `display.println(String(remaining_m) + "m" + String(remaining_s) + "s");` menampilkan waktu yang tersisa sebelum pengiriman data berikutnya di layar OLED.
+- `display.setCursor(55, 55);` mengatur posisi kursor tampilan ke koordinat (55,55).
+- `display.println("ACK in " + String((DELAY_ACK - (currentMillis - previousAckMillisRead))/1000) + "s");` menampilkan waktu yang tersisa sebelum pengiriman pesan ACK berikutnya di layar OLED.
+- `display.display();` memperbarui tampilan OLED untuk menampilkan pesan yang telah ditulis.
+
